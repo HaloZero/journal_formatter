@@ -2,16 +2,14 @@ import calendar
 import json
 import os
 import pdb
-import string
 import nltk
 import random
 
 from flask import render_template, flash, redirect, url_for, request
 from app import app, db, models
-from collections import OrderedDict, Counter
 from datetime import datetime
 from dateutil.relativedelta import *
-from sqlalchemy import and_, or_ 
+from sqlalchemy import and_
 from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
