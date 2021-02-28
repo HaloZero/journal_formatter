@@ -1,0 +1,13 @@
+<div class="entry">
+	<h2>{{ entry.entry_date.strftime("%B %d, %Y") }}</h2>
+	<hr>
+	<pre>{{ entry.entry_text }}</pre>
+	<hr>
+	<div class="scores">
+		<div>Sentiment Score: {{ entry.sentiment_polarity_formatted() }}</div>
+		<div>
+			<span>Actions:</span>
+			<button class='analyze_sentiment'>Analyze Sentiment</button>
+		</div>
+	</div>
+</div>

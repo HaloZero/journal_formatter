@@ -1,0 +1,5 @@
+- TASK: move arguments instead of constantly having to add parameters, work on modifying it so it just takes a dictionary and I build the parameter dictionary instead
+- TASK: Move other partials and templates into it's own system.
+
+- TASK: Meh priority here. 
+	- More models and other stuff https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386

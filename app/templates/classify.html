@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "header_nav.html" %}
+
+<div class="content">
+	{% for sentence in sentences %}
+		<div class="sentence">
+			<pre>{{ sentence }}</pre>
+			<div>
+				<button data-sentiment='pos'>Positive +</button>
+				<button data-sentiment='neg'>Negative -</button>
+				<button data-sentiment='neutral'>Neutral</button>
+			</div>
+			<hr>
+		</div>
+	{% endfor %}
+
+	<a href="/classify_sentences">Refresh</a>
+</div>
+</body>
+</html>

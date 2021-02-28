@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "header_nav.html" %}
+
+<div class="content">
+	<nav>
+		<form method="get" action="/">
+			<div>
+				<span><h2>Search by Month</h2></span>
+			</div>
+
+			{% include "month_select_nav.html" %}
+		</form>
+
+		<form action="search" method="get">
+			<h2>Search:</h2>
+			<input type="text" name="query" value=''></input>
+		</form>
+	</nav>
+
+	{% for entry in entries %}
+		{% include "_entry.html" %}
+	{% endfor %}
+</div>
+</body>
+</html>
