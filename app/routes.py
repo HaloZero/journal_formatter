@@ -17,6 +17,7 @@ from app.classifier import Classifier
 from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
+from app.parsers import DateRangeParser, RequestLengthStyle
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
@@ -89,15 +90,11 @@ def day_in_history():
 
 @app.route('/words')
 def words():
-    now = datetime.now()
-    start_year = int(request.args.get('start_year', '0')) or now.year-1
-    start_month = int(request.args.get('start_month', '0')) or now.month
+    parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_YEAR)
 
-    end_year = int(request.args.get('end_year', '0')) or now.year
-    end_month = int(request.args.get('end_month', '0')) or now.month
+    start_of_range = parser.start_of_range()
+    end_of_range = parser.end_of_range()
 
-    start_of_range = datetime(year=start_year, month=start_month, day=1)
-    end_of_range = datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
             models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date.asc())
@@ -107,17 +104,22 @@ def words():
     else: 
         data_points = WordPresenter(entries).bucket_info(DateStyle.YEAR)
 
-    years = _calculate_years_for_selector()
-
     chartOptions = {
         'legend': {
             'display': 0
         }
     }
 
-    return render_template('words.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, labels=data_points.keys(), values=data_points.values(),
-        chartOptions=chartOptions, chartType='bar')
+    template_args = {
+        'labels': data_points.keys(),
+        'values':data_points.values(),
+        'chartOptions':chartOptions, 
+        'chartType':'bar'
+    }
+
+    template_args.update(parser.template_args())
+
+    return render_template('words.html', **template_args)
 
 @app.route('/ngrams')
 def ngrams():
