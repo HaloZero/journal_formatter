@@ -40,3 +40,4 @@ If you're ready to use it, just modify `use_internal_classifier` in `main.js` to
 - Expand models https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
 - Improve how `use_internal_classifier` is used instead of modifying js file. Expand use to other sentiment graphs.
 - Prettier Graphs and colors.
+- Add tests for request parsers and other components
