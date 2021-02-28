@@ -11,7 +11,7 @@ function setupAnalyze() {
 		var entryText = $entryElement.text()
 		$.getJSON(
 			'/analyze_sentiment', 
-			{'entry_text': entryText, 'use_internal_classifier': false },
+			{'entry_text': entryText, 'use_internal_classifier': 0 },
 			function (response) {
 				$.each(response, function(key, value) {
 			        if (value <= -0.1) {

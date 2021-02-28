@@ -13,6 +13,7 @@ from sqlalchemy import and_
 from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
+from app.classifier import Classifier
 from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
@@ -249,7 +250,7 @@ def analyze_sentiment():
     use_internal_classifier = request.args.get('use_internal_classifier')
     internal_classifier = None
     if use_internal_classifier:
-        internal_classifier =Classifier.build_local_classifier()
+        internal_classifier = Classifier.build_local_classifier()
 
     sentence_breakdown = {}
     sentences = nltk.tokenize.sent_tokenize(entry_text)
