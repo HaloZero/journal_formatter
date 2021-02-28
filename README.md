@@ -35,7 +35,8 @@ If you're ready to use it, just modify `use_internal_classifier` in `main.js` to
 
 ## Things to do
 
-- Simplifying how we send parameters down to the parameters. Send a dictionary down instead of having to provide individual arguments
+- Using parser for range queries and other date parsers
+- Integrate https://pypi.org/project/pyChart.JS/ for easier chart building
 - Expand models https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
 - Improve how `use_internal_classifier` is used instead of modifying js file. Expand use to other sentiment graphs.
 - Prettier Graphs and colors.
