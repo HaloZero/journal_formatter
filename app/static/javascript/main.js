@@ -11,7 +11,7 @@ function setupAnalyze() {
 		var entryText = $entryElement.text()
 		$.getJSON(
 			'/analyze_sentiment', 
-			{'entry_text': entryText, 'use_internal_classifier': true },
+			{'entry_text': entryText, 'use_internal_classifier': false },
 			function (response) {
 				$.each(response, function(key, value) {
 			        if (value <= -0.1) {
@@ -49,6 +49,7 @@ function setupClassify() {
 	})
 }
 
+/// Setup the progress indicator for the analyzer/importing entries
 function setupAnalysisProgress() {
 	if ($(".thread").length > 0) {
 		var threadID = $(".thread").data("thread");
@@ -60,6 +61,7 @@ function setupAnalysisProgress() {
 	}
 }
 
+/// Update the analysis progress
 function updateAnalysisProgress(threadID, completion) {
 	$.getJSON(
 		'/progress-analyze/'+threadID,
