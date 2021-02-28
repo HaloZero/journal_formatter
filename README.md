@@ -31,11 +31,11 @@ If you want to create your own sentiment model, then you can train your own data
 
 You can test the accuracy of your model by running `Classifier.test_local_classifier()` in a flask console (run `flask shell`).
 
-If you're ready to use it, just modify `use_internal_classifier` in `main.js` to true.
+If you're ready to use it, just modify `use_internal_classifier` in `main.js` to true. This is currently only used for local sentence analysis and not the graphs. 
 
 ## Things to do
 
 - Simplifying how we send parameters down to the parameters. Send a dictionary down instead of having to provide individual arguments
-- Configuration to use internal model vs TextBlob classifier. 
 - Expand models https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
-- Improve how `use_internal_classifier` is used instead of modifying js file
+- Improve how `use_internal_classifier` is used instead of modifying js file. Expand use to other sentiment graphs.
+- Prettier Graphs and colors.
