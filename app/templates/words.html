@@ -3,7 +3,7 @@
 {% include "_head.html" %}
 <body>
 
-{% include "header_nav.html" %}
+{% include "_header_nav.html" %}
 
 <div class="content">
     <form method="get" action="/words">
@@ -11,15 +11,16 @@
             <span><h2>Word Counts</h2></span>
         </div>
 
-        {% include "range_nav.html" %}
+        {% include "_range_nav.html" %}
     </form>
 
-    <div>
+    <br><br>
+
+    <div class="chart-container">
         <canvas id="chart" width="600" height="400"></canvas>
 
         <script>
-            // bar chart data
-            var barData = {
+            var chartData = {
                 labels : [
                   {% for item in labels %}
                    "{{ item }}",
@@ -27,9 +28,8 @@
                 ],
 
                 datasets : [{
-                    fillColor: "rgba(151,187,205,0.2)",
-                    strokeColor: "rgba(151,187,205,1)",
-                    pointColor: "rgba(151,187,205,1)",
+                    backgroundColor: "rgba(211,200,217,1)",
+                    borderColor: "rgba(206,217,200,1)",
                     data : [
                         {% for item in values %}
                             {{ item }},
@@ -40,9 +40,11 @@
 
             // get bar chart canvas
             var mychart = document.getElementById("chart").getContext("2d");
+            var chartOptions = {{ chartOptions | safe }}
+            var chartType = "{{ chartType }}"
 
             // draw bar chart
-            new Chart(mychart, {type: 'bar', data: barData, options: {}})
+            new Chart(mychart, {type: chartType, data: chartData, options: chartOptions})
         </script>
     </div>
 </form>

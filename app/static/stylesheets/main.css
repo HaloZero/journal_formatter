@@ -127,6 +127,14 @@ pre .positive_2 {
 	height: 5em;
 	width: 20em;
 }
+
+/* Chart */
+
+.chart-container {
+	margin: 0 auto;
+	width: 65%;
+}
+
 /*nav links */
 
 nav ul {

@@ -109,8 +109,15 @@ def words():
 
     years = _calculate_years_for_selector()
 
+    chartOptions = {
+        'legend': {
+            'display': 0
+        }
+    }
+
     return render_template('words.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, labels=data_points.keys(), values=data_points.values())
+        end_of_range=end_of_range, labels=data_points.keys(), values=data_points.values(),
+        chartOptions=chartOptions, chartType='bar')
 
 @app.route('/ngrams')
 def ngrams():

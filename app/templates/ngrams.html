@@ -3,7 +3,7 @@
 {% include "_head.html" %}
 <body>
 
-{% include "header_nav.html" %}
+{% include "_header_nav.html" %}
 
 <div class="content">
     <form method="get" action="/ngrams">
@@ -11,10 +11,10 @@
             <span><h2>N-Grams</h2></span>
         </div>
 
-        {% include "range_nav.html" %}
+        {% include "_range_nav.html" %}
     </form>
 
-    <div style="margin: auto; width: 65%;">
+    <div class="chart-container">
         <canvas class="chart"></canvas>
         <canvas class="chart"></canvas>
         <canvas class="chart"></canvas>
