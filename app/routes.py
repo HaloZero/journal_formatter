@@ -13,7 +13,7 @@ from sqlalchemy import and_
 from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
-from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter
+from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 
