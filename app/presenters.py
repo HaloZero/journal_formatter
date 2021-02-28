@@ -77,7 +77,7 @@ class WordPresenter():
 
 	def bucket_info(self, dateStyle):
 		buckets = OrderedDict()
-		for entry in entries:
+		for entry in self.entries:
 			key = entry.entry_date.strftime(dateStyle.value)
 			buckets[key] = buckets.get(key, 0) + entry.unique_word_count()
 
