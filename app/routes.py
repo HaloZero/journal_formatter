@@ -6,7 +6,7 @@ import nltk
 import random
 
 from flask import render_template, flash, redirect, url_for, request
-from app import app, db, models
+from app import app, db, models, charts
 from datetime import datetime
 from dateutil.relativedelta import *
 from sqlalchemy import and_
@@ -18,7 +18,6 @@ from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresent
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
-from app.charts import NGramChart
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
@@ -105,7 +104,7 @@ def words():
     else: 
         data_points = WordPresenter(entries).bucket_info(DateStyle.YEAR)
 
-    chart = NGramChart()
+    chart = charts.NGramChart()
     chart.labels.labels = list(data_points.keys())
     chart.data.data = list(data_points.values())
     chartJSON = chart.get()
