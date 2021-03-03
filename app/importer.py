@@ -40,10 +40,10 @@ class DailyDiaryJournalEntry(JournalRecord):
 		self.json = json
 
 	def entryDate(self):
-		datetime.strptime(self.json['d'], '%Y-%m-%dT%H:%M:%S')
+		return datetime.strptime(self.json['d'], '%Y-%m-%dT%H:%M:%S')
 
 	def entryText(self):
-		self.json['j']
+		return self.json['j']
 
 	@staticmethod
 	def mapFromJSON(json):
