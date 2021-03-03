@@ -40,7 +40,7 @@ class DateRangeParser():
 				end_month = now.month
 				return datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
 			elif self.style == RequestLengthStyle.DEFAULT_ALL:
-				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
 				return first_entry.entry_date
 
 	def template_args(self):

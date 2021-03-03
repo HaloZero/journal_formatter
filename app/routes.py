@@ -123,15 +123,11 @@ def words():
 
 @app.route('/ngrams')
 def ngrams():
-    now = datetime.now()
-    start_year = int(request.args.get('start_year', '0')) or now.year-1
-    start_month = int(request.args.get('start_month', '0')) or now.month
+    parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_YEAR)
 
-    end_year = int(request.args.get('end_year', '0')) or now.year
-    end_month = int(request.args.get('end_month', '0')) or now.month
+    start_of_range = parser.start_of_range()
+    end_of_range = parser.end_of_range()
 
-    start_of_range = datetime(year=start_year, month=start_month, day=1)
-    end_of_range = datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
             models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date.asc())
@@ -139,22 +135,21 @@ def ngrams():
     presenter = NGramPresenter(entries)
     graph_labels = [presenter.bucket_info(3), presenter.bucket_info(4), presenter.bucket_info(5)]
 
-    years = _calculate_years_for_selector()
+    template_args = {
+        'graph_labels': graph_labels
+    }
 
-    return render_template('ngrams.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, graph_labels=graph_labels)
+    template_args.update(parser.template_args())
+
+    return render_template('ngrams.html', **template_args)
 
 @app.route('/sentiment')
 def sentiment():
-    now = datetime.now()
-    start_year = int(request.args.get('start_year', '0')) or now.year-1
-    start_month = int(request.args.get('start_month', '0')) or now.month
+    parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_YEAR)
 
-    end_year = int(request.args.get('end_year', '0')) or now.year
-    end_month = int(request.args.get('end_month', '0')) or now.month
+    start_of_range = parser.start_of_range()
+    end_of_range = parser.end_of_range()
 
-    start_of_range = datetime(year=start_year, month=start_month, day=1)
-    end_of_range = datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
             models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date.asc())
@@ -164,7 +159,6 @@ def sentiment():
     else:
         data_points = SentimentPresenter(entries).bucket_info(DateStyle.YEAR)
 
-    years = _calculate_years_for_selector()
 
     chartOptions = {
         'legend': {
@@ -172,24 +166,26 @@ def sentiment():
         }
     }
 
-    return render_template('sentiment.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, labels=data_points.keys(), values=data_points.values(),
-        chartOptions=chartOptions, chartType='line',
-        formAction='/sentiment')
+    template_args = {
+        'labels': data_points.keys(),
+        'values':data_points.values(),
+        'chartOptions':chartOptions, 
+        'chartType':'line',
+        'formAction':'/sentiment'
+    }
+
+    template_args.update(parser.template_args())
+
+    return render_template('sentiment.html', **template_args)
 
 @app.route('/monthly_sentiment')
 def sentiment_by_month():
-    start_year = int(request.args.get('start_year', '0'))
-    start_month = int(request.args.get('start_month', '0'))
+    parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
 
-    end_year = int(request.args.get('end_year', '0'))
-    end_month = int(request.args.get('end_month', '0'))
+    start_of_range = parser.start_of_range()
+    end_of_range = parser.end_of_range()
 
-    first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-    last_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
-    
-    start_of_range = datetime(year=start_year, month=start_month, day=1) if start_year else first_entry.entry_date
-    end_of_range = datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1) if end_year else last_entry.entry_date
+    # import pdb; pdb.set_trace()
 
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
@@ -197,7 +193,6 @@ def sentiment_by_month():
 
     data_points = SentimentPresenter(entries).bucket_info(DateStyle.MONTH)
 
-    years = _calculate_years_for_selector()
     labels = [calendar.month_abbr[int(index)] for index in data_points.keys()]
 
     chartOptions = {
@@ -215,24 +210,24 @@ def sentiment_by_month():
         }
     }
 
-    return render_template('sentiment.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, labels=labels, values=data_points.values(), 
-        chartOptions=chartOptions, chartType='bar',
-        formAction='/monthly_sentiment')
+    template_args = {
+        'labels': data_points.keys(),
+        'values': data_points.values(),
+        'chartOptions': chartOptions, 
+        'chartType':'bar',
+        'formAction':'/monthly_sentiment'
+    }
+
+    template_args.update(parser.template_args())
+
+    return render_template('sentiment.html', **template_args)
 
 @app.route('/distribution_sentiment')
 def distribution_sentiment():
-    start_year = int(request.args.get('start_year', '0'))
-    start_month = int(request.args.get('start_month', '0'))
+    parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
 
-    end_year = int(request.args.get('end_year', '0'))
-    end_month = int(request.args.get('end_month', '0'))
-
-    first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-    last_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
-
-    start_of_range = datetime(year=start_year, month=start_month, day=1) if start_year else first_entry.entry_date
-    end_of_range = datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1) if end_year else last_entry.entry_date
+    start_of_range = parser.start_of_range()
+    end_of_range = parser.end_of_range()
 
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
@@ -240,18 +235,23 @@ def distribution_sentiment():
 
     data_points = SentimentBucketPresenter(entries).bucket_info()
 
-    years = _calculate_years_for_selector()
-
     chartOptions = {
         'legend': {
             'display': 0
         }
     }
 
-    return render_template('sentiment.html', years=years, start_of_range=start_of_range, 
-        end_of_range=end_of_range, labels=data_points.keys(), values=data_points.values(), 
-        chartOptions=chartOptions, chartType='bar',
-        formAction='/distribution_sentiment')
+    template_args = {
+        'labels': data_points.keys(),
+        'values': data_points.values(),
+        'chartOptions': chartOptions,
+        'chartType':'bar',
+        'formAction':'/distribution_sentiment'
+    }
+
+    template_args.update(parser.template_args())
+
+    return render_template('sentiment.html', **template_args)
 
 @app.route('/analyze_sentiment')
 def analyze_sentiment():
