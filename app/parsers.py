@@ -32,7 +32,7 @@ class DateRangeParser():
 
 	def end_of_range(self):
 		if self.end_year and self.end_month:
-			return datetime(year=self.end_year, month=self.end_month, day=1)
+			return datetime(year=self.end_year, month=self.end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
 		else:
 			if self.style == RequestLengthStyle.DEFAULT_YEAR:
 				now = datetime.now()
