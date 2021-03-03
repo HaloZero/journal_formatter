@@ -18,6 +18,7 @@ from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresent
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
+from app.charts import NGramChart
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
@@ -104,17 +105,12 @@ def words():
     else: 
         data_points = WordPresenter(entries).bucket_info(DateStyle.YEAR)
 
-    chartOptions = {
-        'legend': {
-            'display': 0
-        }
-    }
-
+    chart = NGramChart()
+    chart.labels.labels = list(data_points.keys())
+    chart.data.data = list(data_points.values())
+    chartJSON = chart.get()
     template_args = {
-        'labels': data_points.keys(),
-        'values':data_points.values(),
-        'chartOptions':chartOptions, 
-        'chartType':'bar'
+        'chartJSON': chartJSON
     }
 
     template_args.update(parser.template_args())

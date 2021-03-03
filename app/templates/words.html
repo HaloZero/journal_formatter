@@ -16,37 +16,7 @@
 
     <br><br>
 
-    <div class="chart-container">
-        <canvas id="chart" width="600" height="400"></canvas>
-
-        <script>
-            var chartData = {
-                labels : [
-                  {% for item in labels %}
-                   "{{ item }}",
-                  {% endfor %}
-                ],
-
-                datasets : [{
-                    backgroundColor: "rgba(211,200,217,1)",
-                    borderColor: "rgba(206,217,200,1)",
-                    data : [
-                        {% for item in values %}
-                            {{ item }},
-                        {% endfor %}
-                    ]
-                }]
-            }
-
-            // get bar chart canvas
-            var mychart = document.getElementById("chart").getContext("2d");
-            var chartOptions = {{ chartOptions | safe }}
-            var chartType = "{{ chartType }}"
-
-            // draw bar chart
-            new Chart(mychart, {type: chartType, data: chartData, options: chartOptions})
-        </script>
-    </div>
+    {% include "_chart.html" %}
 </form>
 
 </div>
