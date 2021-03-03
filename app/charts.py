@@ -7,8 +7,11 @@ class JournalBaseChart(BaseChart):
 	class data:
 		backgroundColor = Color.RGBA(211, 200, 217, 1)
 
-class NGramChart(JournalBaseChart):
+class WordChart(JournalBaseChart):
 	type = ChartType.Bar
+
+class NGramChart(JournalBaseChart):
+	type = ChartType.HorizontalBar
 
 class SentimentChart(JournalBaseChart):
 	type = ChartType.Line
