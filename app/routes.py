@@ -155,17 +155,12 @@ def sentiment():
         data_points = SentimentPresenter(entries).bucket_info(DateStyle.YEAR)
 
 
-    chartOptions = {
-        'legend': {
-            'display': 0
-        }
-    }
-
+    chart = charts.SentimentChart()
+    chart.labels.labels = list(data_points.keys())
+    chart.data.data = list(data_points.values())
+    chartJSON = chart.get()
     template_args = {
-        'labels': data_points.keys(),
-        'values':data_points.values(),
-        'chartOptions':chartOptions, 
-        'chartType':'line',
+        'chartJSON': chartJSON,
         'formAction':'/sentiment'
     }
 
@@ -180,8 +175,6 @@ def sentiment_by_month():
     start_of_range = parser.start_of_range()
     end_of_range = parser.end_of_range()
 
-    # import pdb; pdb.set_trace()
-
     entries = models.JournalEntry.query.filter(
         and_(models.JournalEntry.entry_date >= start_of_range,
             models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date)
@@ -190,26 +183,12 @@ def sentiment_by_month():
 
     labels = [calendar.month_abbr[int(index)] for index in data_points.keys()]
 
-    chartOptions = {
-        'legend': {
-            'display': 0
-        },
-        'scales': {
-            'yAxes': [{
-                'display': 'true',
-                'ticks': {
-                    'suggestedMin': 0,
-                    'suggestedMax': 0.1,
-                }
-            }]
-        }
-    }
-
+    chart = charts.SentimentByMonthChart()
+    chart.labels.labels = labels
+    chart.data.data = list(data_points.values())
+    chartJSON = chart.get()
     template_args = {
-        'labels': data_points.keys(),
-        'values': data_points.values(),
-        'chartOptions': chartOptions, 
-        'chartType':'bar',
+        'chartJSON': chartJSON,
         'formAction':'/monthly_sentiment'
     }
 
@@ -230,17 +209,12 @@ def distribution_sentiment():
 
     data_points = SentimentBucketPresenter(entries).bucket_info()
 
-    chartOptions = {
-        'legend': {
-            'display': 0
-        }
-    }
-
+    chart = charts.SentimentChart()
+    chart.labels.labels = list(data_points.keys())
+    chart.data.data = list(data_points.values())
+    chartJSON = chart.get()
     template_args = {
-        'labels': data_points.keys(),
-        'values': data_points.values(),
-        'chartOptions': chartOptions,
-        'chartType':'bar',
+        'chartJSON': chartJSON,
         'formAction':'/distribution_sentiment'
     }
 

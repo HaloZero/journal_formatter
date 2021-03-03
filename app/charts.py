@@ -10,6 +10,13 @@ class JournalBaseChart(BaseChart):
 class NGramChart(JournalBaseChart):
 	type = ChartType.Bar
 
-class NGramChart(JournalBaseChart):
+class SentimentChart(JournalBaseChart):
+	type = ChartType.Line
+
+class SentimentByMonthChart(JournalBaseChart):
 	type = ChartType.Bar
 
+	class options:
+		legend = Options.Legend(display=False)
+		_yAxes = [Options.General(ticks=Options.General(suggestedMin=0, suggestedMax=0.1))]
+		scales = Options.General(yAxes=_yAxes)
