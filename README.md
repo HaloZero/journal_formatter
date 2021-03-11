@@ -1,6 +1,24 @@
 # Journal Analyzer
 
-I've been keeping a daily journal for a few years now and decided to open source some of the analysis I've been doing on the records as well as keeping a easier to see format of the records.
+I've been keeping a daily journal for a few years now and decided to open source some of the analysis I've been doing on the records as well as keeping a easier to see format of the records. I don't think anything here has been super insightful but it's fun to look over the data and see if there are any patterns. It was also a fun way to explore and mess with NLTK and play around.
+
+## Main Features
+
+The system has some simple features including a nice way to look at past months of data and a simple search feature.
+
+[example entry]()
+
+### Day in History
+
+Instead of searching for entries at a specific date you can see the history of entires on that date. So if you want to see how you've been spending the past new years you can check out special dates. Or you can just see what you were doing this day a few years ago.
+
+### N-Grams
+
+The N-Grams feature is basically the most common word combinations in a range. By default it looks at ALL your entries but you can narrow it down to a certain range. I think this feature was the most cringe because you realize what silly little tropes. One of my most popular is 100% "I guess we'll see". Which is my I don't know how to end this entry or sentence thought.
+
+### Sentiment Analysis
+
+There's some sentiment analysis by default that uses the NLTK parser to analyze things. But a goal in the future is to allow you to build your own classifier based on your own assessment and then change the system to use that new classifier.
 
 ## Setting up your own system
 
