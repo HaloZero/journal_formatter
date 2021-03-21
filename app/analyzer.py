@@ -17,6 +17,7 @@ class JournalEntryAnalyzer(threading.Thread):
 			self._analyze(entry)
 			self.entries_analyzed += 1
 			self.percent_complete = float(self.entries_analyzed) / float(self.total_entries_to_analyze)
+		db.session.commit()
 		if self.total_entries_to_analyze == 0:
 			self.percent_complete = float(1) / float(1)
 
@@ -31,22 +32,18 @@ class JournalEntryAnalyzer(threading.Thread):
 		"""
 		entry_text = entry.entry_text
 		word_count = self._analyze_word_count(entry_text)
-		names = self._names(self._preprocess(entry.entry_text))
+		names = self._names(entry.entry_text)
 		sentence_count = self._analyze_sentence_count(entry_text)
 
 		entry.word_count = word_count
 		entry.sentence_count = sentence_count
 		entry.names = names
-		db.session.commit()
 
-	def _names(self, tagged_words):
-		filtered_names = list(filter(lambda x: x[1] in ["NNP", "NNPS"], tagged_words))
-		return list(map(lambda x: x[0], filtered_names))
-
-	def _preprocess(self, entry_text):
+	def _names(self, entry_text):
 		tokenized_words = nltk.word_tokenize(entry_text)
 		tagged_words = nltk.pos_tag(tokenized_words)
-		return tagged_words
+		filtered_names = list(filter(lambda x: x[1] in ["NNP", "NNPS"], tagged_words))
+		return list(map(lambda x: x[0], filtered_names))
 
 	def _analyze_word_count(self, entry_text):
 		words = entry_text.split()

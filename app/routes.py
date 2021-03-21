@@ -305,7 +305,7 @@ def analyze_entries():
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = JournalEntryAnalyzer(entries)
-	operation_threads[thread_id].start()
+	operation_threads[thread_id].run()
 
 	return render_template('analyze.html', thread_id=thread_id)
 
