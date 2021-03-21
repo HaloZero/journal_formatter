@@ -53,6 +53,7 @@ If you're ready to use it, just modify `use_internal_classifier` in `main.js` to
 
 ## Things to do
 
+- Fixing `/names` so that it actually shows charts properly
 - Fixing background threading for `/analyze` and `/import`
 - Using parser for other date parsers
 - Expand models https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
