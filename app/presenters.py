@@ -6,6 +6,7 @@ class DateStyle(Enum):
 	YEAR = "%Y"
 	MONTH_YEAR = "%m-%Y"
 	MONTH = "%m"
+	DAY = "%d-%m-%Y"
 
 class SentimentPresenter():
 	def __init__(self, entries):
@@ -82,3 +83,21 @@ class WordPresenter():
 			buckets[key] = buckets.get(key, 0) + entry.unique_word_count()
 
 		return buckets
+
+
+class NamesPresenter():
+	def __init__(self, entries):
+		self.entries = entries
+
+	def bucket_info(self, dateStyle):
+		names_to_data_sets = {}
+
+		for entry in self.entries:
+			key = entry.entry_date.strftime(dateStyle.value)
+			names = entry.names or []
+			for name in names:
+				if names_to_data_sets.get(name) == None:
+					names_to_data_sets[name] = OrderedDict()
+				names_to_data_sets[name][key] = names_to_data_sets[name].get(key, 0) + 1
+
+		return names_to_data_sets

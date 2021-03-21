@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+    <form method="get" action={{ formAction }}>
+        <div>
+            <span><h2>Sentiment</h2></span>
+        </div>
+
+        {% include "_range_nav.html" %}
+    </form>
+
+    {% include "_chart.html" %}
+</form>
+
+</div>
+</body>
+</html>

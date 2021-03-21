@@ -39,13 +39,14 @@ class JournalEntryAnalyzer(threading.Thread):
 		entry.names = names
 		db.session.commit()
 
-	def _names(self, tokenized):
-		list(filter(lambda x: x[1] in ["NNP", "NNPS"], tokenized))
+	def _names(self, tagged_words):
+		filtered_names = list(filter(lambda x: x[1] in ["NNP", "NNPS"], tagged_words))
+		return list(map(lambda x: x[0], filtered_names))
 
 	def _preprocess(self, entry_text):
-		sent = nltk.word_tokenize(entry_text)
-		sent = nltk.pos_tag(entry_text)
-		return sent
+		tokenized_words = nltk.word_tokenize(entry_text)
+		tagged_words = nltk.pos_tag(tokenized_words)
+		return tagged_words
 
 	def _analyze_word_count(self, entry_text):
 		words = entry_text.split()

@@ -23,3 +23,6 @@ class SentimentByMonthChart(JournalBaseChart):
 		legend = Options.Legend(display=False)
 		_yAxes = [Options.General(ticks=Options.General(suggestedMin=0, suggestedMax=0.1))]
 		scales = Options.General(yAxes=_yAxes)
+
+class NameChart(JournalBaseChart):
+	type = ChartType.Line

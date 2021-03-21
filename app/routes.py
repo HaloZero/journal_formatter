@@ -14,7 +14,7 @@ from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
 from app.classifier import Classifier
-from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter
+from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
@@ -249,6 +249,31 @@ def analyze_sentiment():
 			sentence_breakdown[sentence] = TextBlob(sentence).sentiment.polarity
 
 	return sentence_breakdown
+
+@app.route('/names')
+def names_over_time():
+	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+
+	start_of_range = parser.start_of_range()
+	end_of_range = parser.end_of_range()
+
+	entries = models.JournalEntry.query.filter(
+		and_(models.JournalEntry.entry_date >= start_of_range,
+			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date)
+
+	data_points = NamesPresenter(entries).bucket_info(DateStyle.DAY)
+	chart = charts.NameChart()
+	# chart.labels.labels = labels
+	chart.data.data = data_points.values()
+	chartJSON = chart.get()
+	template_args = {
+		'chartJSON': chartJSON,
+		'formAction':'/names'
+	}
+
+	template_args.update(parser.template_args())
+
+	return render_template('names.html', **template_args)
 
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
