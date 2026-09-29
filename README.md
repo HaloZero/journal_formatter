@@ -28,6 +28,14 @@ Entries are run through spaCy's named entity recognition (`en_core_web_lg`) to p
 
 `/places` clusters your location mentions into date ranges (mentions within `TIMELINE_GAP_DAYS` of each other, default 14, are treated as one continuous stretch) to give a rough sense of when you were where — e.g. "Tokyo: Jun–Sep 2019". It's mention-based, not GPS-based, so it reflects what you wrote about, not necessarily where you physically were.
 
+### Photos
+
+Drop image files (`.jpg`/`.jpeg`/`.png`/`.gif`) anywhere under `data/photos/` — nested folders are fine. Visiting `/import_photos` scans that folder, figures out each photo's date (EXIF `DateTimeOriginal` first, then a `YYYY-MM-DD`-ish pattern in the filename), matches it to a journal entry with the same `entry_date`, and copies it into `app/static/photos/<year>/` with a `JournalPhoto` row linking it to that entry. Photos with no recognizable date, or no matching entry, are skipped and logged. Re-running the scan is safe — already-imported photos aren't duplicated.
+
+### Entry Status
+
+`/status` lists entries in a date range along with whether they've been analyzed (word/sentence counts, names, locations) and how many photos are attached, with buttons to analyze just the unanalyzed entries, re-analyze everything, or trigger a photo scan.
+
 ## Setting up your own system
 
 Depending on how you keep the format of your journal you'll need to do a few things.
@@ -49,13 +57,25 @@ Effectively you'll need to build your own parser and just make each record confo
    pip install -r requirements.txt
    python -m spacy download en_core_web_lg
    ```
-2) Make sure Postgres is running and a `journal_python` database exists (or set `DATABASE_URL` to point elsewhere).
+2) Set up the project's own Postgres cluster (lives entirely under `data/`, separate from any system-wide Postgres):
+   ```
+   ./bin/db.sh init
+   ./bin/db.sh start
+   ./bin/db.sh create
+   ```
+   `./bin/db.sh stop` shuts it down; `./bin/db.sh status` checks whether it's running. It listens on port 5433 by default (override with `PGPORT`), so it won't collide with a system Postgres on 5432. `DATABASE_URL` defaults to this cluster; set it yourself to point elsewhere instead.
 3) Run Migrations. `flask db upgrade`
 4) Start the app server `flask run`
 5) In a web browser go to `/import` to start importing your records.
-6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries
+6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries, or `/import_photos` to pull in photos from `data/photos/` (see below).
 
 You should be able to then see records on your localhost!
+
+### The `data/` directory
+
+Everything local and personal lives under `data/` (gitignored, never committed):
+- `data/postgres/` — this project's own Postgres cluster
+- `data/photos/` — drop photos here for `/import_photos` to scan (see below)
 
 ## Creating your own sentiment model
 
@@ -66,6 +86,10 @@ If you want to create your own sentiment model, then you can train your own data
 You can test the accuracy of your model by running `Classifier.test_local_classifier()` in a flask console (run `flask shell`).
 
 If you're ready to use it, just modify `use_internal_classifier` in `main.js` to true. This is currently only used for local sentence analysis and not the graphs.
+
+## Running tests
+
+Tests live in `tests/`, separate from the `app/` package. With `./bin/db.sh start` running, just run `pytest` — `conftest.py` points the app at a `journal_python_test` database, creates it automatically if it doesn't exist yet, creates tables, and empties them between tests, so tests never touch your real journal data. `tests/factories.py` has helpers (`make_journal_entry`, `make_journal_photo`, `make_sentiment_record`) for building fake records — see `tests/test_db_presenters.py` for examples.
 
 ## Things to do
 

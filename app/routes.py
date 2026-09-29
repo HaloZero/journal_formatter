@@ -17,6 +17,7 @@ from app.classifier import Classifier
 from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter, LocationTimelinePresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
+from app.photo_importer import PhotoImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
@@ -298,6 +299,26 @@ def places_timeline():
 
 	return render_template('places.html', **template_args)
 
+@app.route('/status')
+def entries_status():
+	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+
+	start_of_range = parser.start_of_range()
+	end_of_range = parser.end_of_range()
+
+	entries = models.JournalEntry.query.filter(
+		and_(models.JournalEntry.entry_date >= start_of_range,
+			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date.desc())
+
+	template_args = {
+		'entries': entries,
+		'formAction':'/status'
+	}
+
+	template_args.update(parser.template_args())
+
+	return render_template('status.html', **template_args)
+
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
 	years = []
@@ -324,10 +345,24 @@ def import_entries():
 @app.route('/analyze')
 def analyze_entries():
 	global operation_threads
-	entries = models.JournalEntry.query.all()
+
+	if request.args.get('only_unanalyzed'):
+		entries = models.JournalEntry.query.filter(models.JournalEntry.word_count.is_(None)).all()
+	else:
+		entries = models.JournalEntry.query.all()
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = JournalEntryAnalyzer(entries)
+	operation_threads[thread_id].run()
+
+	return render_template('analyze.html', thread_id=thread_id)
+
+@app.route('/import_photos')
+def import_photos():
+	global operation_threads
+
+	thread_id = random.randint(0, 10000)
+	operation_threads[thread_id] = PhotoImporter()
 	operation_threads[thread_id].run()
 
 	return render_template('analyze.html', thread_id=thread_id)

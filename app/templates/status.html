@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+    <form method="get" action={{ formAction }}>
+        <div>
+            <span><h2>Entry Status</h2></span>
+        </div>
+
+        {% include "_range_nav.html" %}
+    </form>
+
+    <div class="scores" style="padding: 15px 0;">
+        <span>Actions:</span>
+        <a href="/analyze?only_unanalyzed=1"><button type="button">Analyze Unanalyzed Entries</button></a>
+        <a href="/analyze"><button type="button">Re-analyze All Entries</button></a>
+        <a href="/import_photos"><button type="button">Scan for Photos</button></a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Analyzed</th>
+                <th>Word Count</th>
+                <th>Sentence Count</th>
+                <th>Names</th>
+                <th>Places</th>
+                <th>Daily Score</th>
+                <th>Photos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in entries %}
+            <tr>
+                <td>{{ entry.entry_date.strftime("%B %d, %Y") }}</td>
+                <td>{{ "Yes" if entry.word_count is not none else "No" }}</td>
+                <td>{{ entry.word_count if entry.word_count is not none else "—" }}</td>
+                <td>{{ entry.sentence_count if entry.sentence_count is not none else "—" }}</td>
+                <td>{{ entry.names|length if entry.names else 0 }}</td>
+                <td>{{ entry.locations|length if entry.locations else 0 }}</td>
+                <td>{{ entry.daily_score if entry.daily_score is not none else "—" }}</td>
+                <td>{{ entry.photos|length }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+</body>
+</html>
