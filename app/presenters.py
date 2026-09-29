@@ -101,3 +101,48 @@ class NamesPresenter():
 				names_to_data_sets[name][key] = names_to_data_sets[name].get(key, 0) + 1
 
 		return names_to_data_sets
+
+class LocationTimelinePresenter():
+	def __init__(self, entries, gap_days=14):
+		self.entries = entries
+		self.gap_days = gap_days
+
+	def timeline(self):
+		mentions = {}
+		for entry in self.entries:
+			for location in (entry.locations or []):
+				mentions.setdefault(location, []).append(entry.entry_date)
+
+		ranges = []
+		for location, dates in mentions.items():
+			ranges.extend(self._ranges_for_location(location, sorted(set(dates))))
+
+		ranges.sort(key=lambda r: r['start_date'])
+		return ranges
+
+	def _ranges_for_location(self, location, dates):
+		ranges = []
+		range_start = dates[0]
+		range_end = dates[0]
+		mention_count = 1
+
+		for date in dates[1:]:
+			if (date - range_end).days <= self.gap_days:
+				range_end = date
+				mention_count += 1
+			else:
+				ranges.append(self._range(location, range_start, range_end, mention_count))
+				range_start = date
+				range_end = date
+				mention_count = 1
+
+		ranges.append(self._range(location, range_start, range_end, mention_count))
+		return ranges
+
+	def _range(self, location, start_date, end_date, mention_count):
+		return {
+			'location': location,
+			'start_date': start_date,
+			'end_date': end_date,
+			'mention_count': mention_count,
+		}

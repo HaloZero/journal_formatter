@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+    <form method="get" action={{ formAction }}>
+        <div>
+            <span><h2>Places</h2></span>
+        </div>
+
+        {% include "_range_nav.html" %}
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Location</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Mentions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for range in timeline %}
+            <tr>
+                <td>{{ range.location }}</td>
+                <td>{{ range.start_date.strftime("%B %d, %Y") }}</td>
+                <td>{{ range.end_date.strftime("%B %d, %Y") }}</td>
+                <td>{{ range.mention_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+</body>
+</html>

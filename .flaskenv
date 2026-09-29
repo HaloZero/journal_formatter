@@ -1,1 +1,1 @@
-FLASK_APP=journalformatter.py
+FLASK_APP=app

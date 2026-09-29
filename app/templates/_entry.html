@@ -3,12 +3,21 @@
 	<hr>
 	<pre>{{ entry.entry_text }}</pre>
 	<hr>
+	{% if entry.photos %}
+	<div class="photos">
+		{% for photo in entry.photos %}
+		<img src="{{ url_for('static', filename=photo.file_path) }}" alt="{{ photo.caption or '' }}">
+		{% endfor %}
+	</div>
+	{% endif %}
 	<div class="scores">
 		<div>Sentiment Score: {{ entry.sentiment_polarity_formatted() }}</div>
+		<div>Daily Score: {{ entry.daily_score if entry.daily_score is not none else "—" }}</div>
 		<div>
 			<span>Actions:</span>
 			<button class='analyze_sentiment'>Analyze Sentiment</button>
 		</div>
 		<div>Names: {{ entry.names }}</div>
+		<div>Places: {{ entry.locations }}</div>
 	</div>
 </div>

@@ -1,8 +1,13 @@
-import nltk
+import spacy
 import string
 import threading
 
-from app import db
+from app import app, db
+
+_nlp = spacy.load(app.config['SPACY_MODEL'])
+
+PERSON_LABELS = {"PERSON"}
+LOCATION_LABELS = {"GPE", "LOC"}
 
 class JournalEntryAnalyzer(threading.Thread):
 	def __init__(self, entries):
@@ -25,25 +30,32 @@ class JournalEntryAnalyzer(threading.Thread):
 		"""
 		Analyze a specific journal entry
 
-		Adds common useful attributes such as word count, identifying names, and sentence count to an entry
+		Adds common useful attributes such as word count, identifying names and locations,
+		and sentence count to an entry
 
 		Parameters:
 		entry (JournalEntry): the entry to analyze
 		"""
 		entry_text = entry.entry_text
+		doc = _nlp(entry_text)
+		names, locations = self._entities(doc)
 		word_count = self._analyze_word_count(entry_text)
-		names = self._names(entry.entry_text)
-		sentence_count = self._analyze_sentence_count(entry_text)
+		sentence_count = len(list(doc.sents))
 
 		entry.word_count = word_count
 		entry.sentence_count = sentence_count
 		entry.names = names
+		entry.locations = locations
 
-	def _names(self, entry_text):
-		tokenized_words = nltk.word_tokenize(entry_text)
-		tagged_words = nltk.pos_tag(tokenized_words)
-		filtered_names = list(filter(lambda x: x[1] in ["NNP", "NNPS"], tagged_words))
-		return list(map(lambda x: x[0], filtered_names))
+	def _entities(self, doc):
+		names = []
+		locations = []
+		for ent in doc.ents:
+			if ent.label_ in PERSON_LABELS:
+				names.append(ent.text)
+			elif ent.label_ in LOCATION_LABELS:
+				locations.append(ent.text)
+		return names, locations
 
 	def _analyze_word_count(self, entry_text):
 		words = entry_text.split()
@@ -51,6 +63,3 @@ class JournalEntryAnalyzer(threading.Thread):
 		table = str.maketrans('', '', string.punctuation)
 		stripped = list(filter(None, [w.translate(table) for w in words]))
 		return len(stripped)
-
-	def _analyze_sentence_count(self, entry_text):
-		return len(nltk.tokenize.sent_tokenize(entry_text))

@@ -14,7 +14,7 @@ from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
 from app.classifier import Classifier
-from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter
+from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter, LocationTimelinePresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
@@ -274,6 +274,29 @@ def names_over_time():
 	template_args.update(parser.template_args())
 
 	return render_template('names.html', **template_args)
+
+@app.route('/places')
+def places_timeline():
+	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+
+	start_of_range = parser.start_of_range()
+	end_of_range = parser.end_of_range()
+
+	entries = models.JournalEntry.query.filter(
+		and_(models.JournalEntry.entry_date >= start_of_range,
+			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date)
+
+	gap_days = app.config['TIMELINE_GAP_DAYS']
+	timeline = LocationTimelinePresenter(entries, gap_days=gap_days).timeline()
+
+	template_args = {
+		'timeline': timeline,
+		'formAction':'/places'
+	}
+
+	template_args.update(parser.template_args())
+
+	return render_template('places.html', **template_args)
 
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()

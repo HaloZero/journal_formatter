@@ -20,6 +20,14 @@ The N-Grams feature is basically the most common word combinations in a range. B
 
 There's some sentiment analysis by default that uses the NLTK parser to analyze things. But a goal in the future is to allow you to build your own classifier based on your own assessment and then change the system to use that new classifier.
 
+### Names & Places
+
+Entries are run through spaCy's named entity recognition (`en_core_web_lg`) to pull out people (`entry.names`) and places (`entry.locations`) mentioned in each entry — more accurate than the old NLTK POS-tag heuristic, and it catches multi-word places too.
+
+### Places Timeline
+
+`/places` clusters your location mentions into date ranges (mentions within `TIMELINE_GAP_DAYS` of each other, default 14, are treated as one continuous stretch) to give a rough sense of when you were where — e.g. "Tokyo: Jun–Sep 2019". It's mention-based, not GPS-based, so it reflects what you wrote about, not necessarily where you physically were.
+
 ## Setting up your own system
 
 Depending on how you keep the format of your journal you'll need to do a few things.
@@ -34,10 +42,18 @@ Effectively you'll need to build your own parser and just make each record confo
 
 ## Starting the app
 
-1) Run Migrations. `flask db upgrade`
-2) Start the app server `flask run`
-3) In a web browser go to `/import` to start importing your records.
-4) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries
+1) Create and activate a virtualenv, then install dependencies:
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   python -m spacy download en_core_web_lg
+   ```
+2) Make sure Postgres is running and a `journal_python` database exists (or set `DATABASE_URL` to point elsewhere).
+3) Run Migrations. `flask db upgrade`
+4) Start the app server `flask run`
+5) In a web browser go to `/import` to start importing your records.
+6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries
 
 You should be able to then see records on your localhost!
 
