@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+	<div>
+		<span><h2>Config</h2></span>
+	</div>
+
+	<div class="empty-state">
+		<h2>Known Names</h2>
+		<p>Names listed here are always recognized as names by the analyzer, even if it would otherwise mistake them for a place. Re-run analysis on affected entries for a change to take effect.</p>
+
+		<form class="search-form" method="post" action="{{ url_for('config') }}">
+			<div class="search-fields">
+				<div class="search-field">
+					<label for="name">Name</label>
+					<input type="text" id="name" name="name" placeholder="e.g. Jordan" required>
+				</div>
+				<button type="submit">Add</button>
+			</div>
+		</form>
+
+		{% if known_names %}
+		<div class="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for known_name in known_names %}
+					<tr>
+						<td>{{ known_name.name }}</td>
+						<td class="text-center">
+							<form method="post" action="{{ url_for('config_delete', known_name_id=known_name.id) }}">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<p class="tag-empty">No known names yet.</p>
+		{% endif %}
+	</div>
+</div>
+</body>
+</html>

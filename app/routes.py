@@ -22,6 +22,7 @@ from app.photo_importer import PhotoImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
 
 logger = logging.getLogger('journal.import')
+logger_config = logging.getLogger('journal.config')
 
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
@@ -458,3 +459,26 @@ def analyze_progress(thread_id):
 	percent_complete = operation_threads[thread_id].percent_complete
 	total_entries = operation_threads[thread_id].total_entries_to_analyze
 	return {'percent_complete': percent_complete, 'total_entries': total_entries }
+
+@app.route('/config', methods=['GET', 'POST'])
+def config():
+	if request.method == 'POST':
+		name = request.form.get('name', '').strip()
+		already_known = models.KnownName.query.filter(func.lower(models.KnownName.name) == name.lower()).first()
+		if name and not already_known:
+			db.session.add(models.KnownName(name=name))
+			db.session.commit()
+			logger_config.info("Added known name '%s'", name)
+		return redirect(url_for('config'))
+
+	known_names = models.KnownName.query.order_by(models.KnownName.name).all()
+	return render_template('config.html', known_names=known_names)
+
+@app.route('/config/delete/<int:known_name_id>', methods=['POST'])
+def config_delete(known_name_id):
+	known_name = models.KnownName.query.get(known_name_id)
+	if known_name is not None:
+		db.session.delete(known_name)
+		db.session.commit()
+		logger_config.info("Removed known name '%s'", known_name.name)
+	return redirect(url_for('config'))

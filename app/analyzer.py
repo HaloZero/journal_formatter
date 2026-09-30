@@ -1,3 +1,4 @@
+import re
 import spacy
 import string
 import threading
@@ -15,7 +16,12 @@ class JournalEntryAnalyzer(threading.Thread):
 		self.entries_analyzed = 0
 		self.percent_complete = 0
 		self.total_entries_to_analyze = len(self.entries)
+		self.known_names = self._load_known_names()
 		super().__init__()
+
+	def _load_known_names(self):
+		from app.models import KnownName
+		return {known_name.name.lower() for known_name in KnownName.query.all()}
 
 	def run(self):
 		for entry in self.entries:
@@ -38,7 +44,7 @@ class JournalEntryAnalyzer(threading.Thread):
 		"""
 		entry_text = entry.entry_text
 		doc = _nlp(entry_text)
-		names, locations = self._entities(doc)
+		names, locations = self._entities(doc, entry_text)
 		word_count = self._analyze_word_count(entry_text)
 		sentence_count = len(list(doc.sents))
 
@@ -47,15 +53,31 @@ class JournalEntryAnalyzer(threading.Thread):
 		entry.names = names
 		entry.locations = locations
 
-	def _entities(self, doc):
+	def _entities(self, doc, entry_text):
 		names = []
 		locations = []
+		matched_spans = []
 		for ent in doc.ents:
-			if ent.label_ in PERSON_LABELS:
+			matched_spans.append((ent.start_char, ent.end_char))
+			if ent.text.lower() in self.known_names:
+				# a known name always wins, even if spaCy mistagged it as a place
+				names.append(ent.text)
+			elif ent.label_ in PERSON_LABELS:
 				names.append(ent.text)
 			elif ent.label_ in LOCATION_LABELS:
 				locations.append(ent.text)
+		names.extend(self._unrecognized_known_names(entry_text, matched_spans))
 		return names, locations
+
+	def _unrecognized_known_names(self, entry_text, matched_spans):
+		"""Known names spaCy didn't tag as any entity at all still count as names."""
+		found = []
+		for known_name in self.known_names:
+			pattern = r'\b' + re.escape(known_name) + r'\b'
+			for match in re.finditer(pattern, entry_text, re.IGNORECASE):
+				if not any(match.start() < end and match.end() > start for start, end in matched_spans):
+					found.append(match.group(0))
+		return found
 
 	def _analyze_word_count(self, entry_text):
 		words = entry_text.split()

@@ -84,6 +84,13 @@ class SentimentRecord(db.Model):
     def __repr__(self):
         return '<{} sentiment for sentence "{}">'.format(self.sentiment, self.sentence)
 
+class KnownName(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, unique=True, nullable=False)
+
+    def __repr__(self):
+        return '<KnownName {}>'.format(self.name)
+
 class JournalPhoto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     journal_entry_id = db.Column(db.Integer, db.ForeignKey('journal_entry.id'), index=True, nullable=False)
