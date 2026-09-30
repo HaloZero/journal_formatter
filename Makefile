@@ -22,7 +22,7 @@ help:
 	@echo "make db-create         create the journal_python database"
 	@echo "make migrate           apply migrations (flask db upgrade)"
 	@echo "make migration name=…  generate a new migration (flask db migrate -m name)"
-	@echo "make run               start the dev server (flask run)"
+	@echo "make run               start the dev server with debug/auto-reload (flask run --debug)"
 	@echo "make shell             open a flask shell"
 	@echo "make test              run the test suite (pytest)"
 	@echo "make import            trigger /import against a running server"
@@ -67,7 +67,7 @@ migration:
 	$(FLASK) db migrate -m "$(name)"
 
 run:
-	$(FLASK) run --host $(HOST) --port $(PORT)
+	$(FLASK) run --host $(HOST) --port $(PORT) --debug
 
 shell:
 	$(FLASK) shell
