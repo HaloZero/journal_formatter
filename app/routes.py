@@ -1,6 +1,7 @@
 import calendar
 import json
 import logging
+import math
 import pdb
 import nltk
 import random
@@ -10,7 +11,7 @@ from pychartjs import Color
 from app import app, db, models, charts
 from datetime import datetime
 from dateutil.relativedelta import *
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
@@ -27,9 +28,12 @@ logger_config = logging.getLogger('journal.config')
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
 
-# /names_comparison never shows more than this many names - past this it's dropped
-# entirely rather than lumped into an "Other" bucket
-MAX_COMPARISON_NAMES = 10
+# /names_comparison consolidates its date range into at most this many time buckets
+MAX_COMPARISON_BUCKETS = 20
+
+# Selectable "top N names per bucket" options on /names_comparison
+TOP_N_OPTIONS = [10, 25]
+DEFAULT_TOP_N = 10
 NAME_CHART_COLORS = [
 	Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple,
 	Color.Teal, Color.Maroon, Color.Olive, Color.Navy, Color.Brown,
@@ -333,84 +337,80 @@ def names_over_time():
 
 @app.route('/names_comparison')
 def names_comparison():
-	now = datetime.now()
-	default_month_b = datetime(year=now.year, month=now.month, day=1)
-	default_month_a = default_month_b - relativedelta(months=1)
-
-	month_a = _parse_month_param('month_a', default_month_a)
-	month_b = _parse_month_param('month_b', default_month_b)
+	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+	start_of_range = parser.start_of_range()
+	end_of_range = parser.end_of_range()
 
 	exclude_raw = request.args.get('exclude', '')
 	excluded_names = _load_excluded_names() | {name.strip().lower() for name in exclude_raw.split(',') if name.strip()}
 
-	start_a, end_a = _month_bounds(month_a)
-	start_b, end_b = _month_bounds(month_b)
+	top_n = int(request.args.get('top_n', '0')) or DEFAULT_TOP_N
+	if top_n not in TOP_N_OPTIONS:
+		top_n = DEFAULT_TOP_N
 
-	entries = models.JournalEntry.query.filter(
-		or_(
-			and_(models.JournalEntry.entry_date >= start_a, models.JournalEntry.entry_date <= end_a),
-			and_(models.JournalEntry.entry_date >= start_b, models.JournalEntry.entry_date <= end_b),
-		))
+	buckets = _consolidate_into_buckets(start_of_range, end_of_range, MAX_COMPARISON_BUCKETS)
 
-	data_points = NamesPresenter(entries).bucket_info(DateStyle.MONTH_YEAR)
+	bucket_labels = []
+	bucket_top_n_totals = []  # y-axis: sum of that bucket's top-N names' mentions
+	bucket_name_totals = []   # every name's total in that bucket, for the heatmap
+	names_in_any_top_n = set()
 
-	key_a = month_a.strftime(DateStyle.MONTH_YEAR.value)
-	key_b = month_b.strftime(DateStyle.MONTH_YEAR.value)
-	label_a = '{} {}'.format(calendar.month_name[month_a.month], month_a.year)
-	label_b = '{} {}'.format(calendar.month_name[month_b.month], month_b.year)
+	for bucket_start, bucket_end in buckets:
+		entries = models.JournalEntry.query.filter(
+			and_(models.JournalEntry.entry_date >= bucket_start, models.JournalEntry.entry_date <= bucket_end))
 
-	# Cap at MAX_COMPARISON_NAMES names, strictly by total mentions - names past the
-	# cutoff are just dropped, not lumped into an "Other" bucket (an aggregate of
-	# everyone else would usually dwarf every individual name and defeat the point).
-	candidate_names = [name for name in data_points if name.lower() not in excluded_names]
-	top_names = sorted(
-		candidate_names,
-		key=lambda name: data_points[name].get(key_a, 0) + data_points[name].get(key_b, 0),
-		reverse=True)[:MAX_COMPARISON_NAMES]
+		data_points = NamesPresenter(entries).bucket_info(DateStyle.MONTH_YEAR)
+		name_totals = {
+			name: sum(counts.values())
+			for name, counts in data_points.items()
+			if name.lower() not in excluded_names
+		}
 
-	counts_a = [data_points[name].get(key_a, 0) for name in top_names]
-	counts_b = [data_points[name].get(key_b, 0) for name in top_names]
+		top_names_this_bucket = sorted(name_totals, key=lambda name: name_totals[name], reverse=True)[:top_n]
 
-	chart = charts.NameComparisonChart()
-	chart.labels.labels = top_names
-	chart.data = type('NamesComparisonChartData', (), {
-		'month_a': type('MonthASeries', (), {
-			'label': label_a,
-			'data': counts_a,
-			'borderColor': NAME_CHART_COLORS[0],
-			'backgroundColor': NAME_CHART_COLORS[0],
-		}),
-		'month_b': type('MonthBSeries', (), {
-			'label': label_b,
-			'data': counts_b,
-			'borderColor': NAME_CHART_COLORS[1],
-			'backgroundColor': NAME_CHART_COLORS[1],
-		}),
-	})
+		bucket_labels.append(_bucket_label(bucket_start, bucket_end))
+		bucket_top_n_totals.append(sum(name_totals[name] for name in top_names_this_bucket))
+		bucket_name_totals.append(name_totals)
+		names_in_any_top_n.update(top_names_this_bucket)
+
+	chart = charts.NameTimelineChart()
+	chart.labels.labels = bucket_labels
+	chart.data.data = bucket_top_n_totals
 	chartJSON = chart.get()
 
-	max_count = max(counts_a + counts_b, default=0)
+	# Heatmap covers every name that made the top-N cut in at least one bucket,
+	# sorted by their total mentions across the whole range.
+	heatmap_names = sorted(
+		names_in_any_top_n,
+		key=lambda name: sum(totals.get(name, 0) for totals in bucket_name_totals),
+		reverse=True)
+	heatmap_max = max(
+		(totals.get(name, 0) for totals in bucket_name_totals for name in heatmap_names),
+		default=0)
 	heatmap_rows = [
 		{
 			'name': name,
-			'count_a': count_a,
-			'count_b': count_b,
-			'color_a': _heatmap_color(count_a, max_count),
-			'color_b': _heatmap_color(count_b, max_count),
+			'cells': [
+				{
+					'count': totals.get(name, 0),
+					'color': _heatmap_color(totals.get(name, 0), heatmap_max),
+				}
+				for totals in bucket_name_totals
+			],
 		}
-		for name, count_a, count_b in zip(top_names, counts_a, counts_b)
+		for name in heatmap_names
 	]
 
 	template_args = {
 		'chartJSON': chartJSON,
-		'month_a_value': month_a.strftime('%Y-%m'),
-		'month_b_value': month_b.strftime('%Y-%m'),
-		'label_a': label_a,
-		'label_b': label_b,
 		'exclude_raw': exclude_raw,
+		'top_n': top_n,
+		'top_n_options': TOP_N_OPTIONS,
+		'bucket_labels': bucket_labels,
 		'heatmap_rows': heatmap_rows,
-		'max_comparison_names': MAX_COMPARISON_NAMES,
 	}
+
+	template_args.update(parser.template_args())
 
 	return render_template('names_comparison.html', **template_args)
 
@@ -479,6 +479,32 @@ def _month_bounds(month_start):
 
 def _load_excluded_names():
 	return {excluded_name.name.lower() for excluded_name in models.ExcludedName.query.all()}
+
+def _consolidate_into_buckets(start_of_range, end_of_range, max_buckets):
+	"""Split [start_of_range, end_of_range] into consecutive, month-aligned chunks,
+	as narrow as possible while keeping the total chunk count at or below max_buckets."""
+	start_month = datetime(year=start_of_range.year, month=start_of_range.month, day=1)
+	end_month = datetime(year=end_of_range.year, month=end_of_range.month, day=1)
+	total_months = (end_month.year - start_month.year) * 12 + (end_month.month - start_month.month) + 1
+	chunk_size = max(1, math.ceil(total_months / max_buckets))
+
+	buckets = []
+	cursor = start_month
+	while cursor <= end_month:
+		bucket_end_month = min(cursor + relativedelta(months=+(chunk_size - 1)), end_month)
+		bucket_end = bucket_end_month + relativedelta(months=+1) - relativedelta(days=+1)
+		buckets.append((cursor, bucket_end))
+		cursor = bucket_end_month + relativedelta(months=+1)
+	return buckets
+
+def _bucket_label(bucket_start, bucket_end):
+	if bucket_start.year == bucket_end.year and bucket_start.month == bucket_end.month:
+		return '{} {}'.format(calendar.month_abbr[bucket_start.month], bucket_start.year)
+	if bucket_start.year == bucket_end.year:
+		return '{}-{} {}'.format(calendar.month_abbr[bucket_start.month], calendar.month_abbr[bucket_end.month], bucket_start.year)
+	return '{} {} - {} {}'.format(
+		calendar.month_abbr[bucket_start.month], bucket_start.year,
+		calendar.month_abbr[bucket_end.month], bucket_end.year)
 
 def _heatmap_color(value, max_value):
 	"""Blue at an opacity proportional to value/max_value, so cells are comparable

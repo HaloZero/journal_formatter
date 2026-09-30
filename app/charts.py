@@ -35,9 +35,5 @@ class NameChart(JournalBaseChart):
 		# lines (one per name), so the legend is needed to tell them apart.
 		legend = Options.Legend(display=True)
 
-class NameComparisonChart(JournalBaseChart):
+class NameTimelineChart(JournalBaseChart):
 	type = ChartType.Bar
-
-	class options:
-		# Two bars per name (one per month) - the legend distinguishes the months.
-		legend = Options.Legend(display=True)

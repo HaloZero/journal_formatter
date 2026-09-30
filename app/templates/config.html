@@ -96,7 +96,7 @@
 
 	<div class="empty-state">
 		<h2>Excluded Names</h2>
-		<p>Names listed here are always left out of the name-mention charts (<a href="{{ url_for('names_over_time') }}">Names</a>, <a href="{{ url_for('names_comparison') }}">Compare Names by Month</a>) - useful for a name that's mentioned so often it drowns out everything else. This doesn't affect analysis - the name is still recorded on entries, just excluded from these charts.</p>
+		<p>Names listed here are always left out of the name-mention charts (<a href="{{ url_for('names_over_time') }}">Names</a>, <a href="{{ url_for('names_comparison') }}">Top Names Over Time</a>) - useful for a name that's mentioned so often it drowns out everything else. This doesn't affect analysis - the name is still recorded on entries, just excluded from these charts.</p>
 
 		<form class="search-form" method="post" action="{{ url_for('config_add_excluded_name') }}">
 			<div class="search-fields">

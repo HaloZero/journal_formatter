@@ -439,10 +439,11 @@ pre .positive_2 {
 }
 
 .heatmap-container {
-	max-width: 500px;
+	max-width: 1200px;
 	margin-top: 25px;
 }
 
 .heatmap-table td {
 	font-weight: bold;
+	white-space: nowrap;
 }

@@ -8,22 +8,23 @@
 <div class="content">
     <form method="get" action="{{ url_for('names_comparison') }}">
         <div>
-            <span><h2>Compare Names by Month</h2></span>
+            <span><h2>Top Names Over Time</h2></span>
         </div>
 
-        <p class="chart-explainer">Pick two months to compare how often each name was mentioned. Shows at most the top {{ max_comparison_names }} names by total mentions - names past that are dropped rather than lumped into an "Other" bucket. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
+        <p class="chart-explainer">Pick a date range - it's consolidated into up to 20 time periods automatically. Each bar is the total mentions of that period's top {{ top_n }} names; the heatmap below breaks that back out by name. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
+
+        {% include "_range_nav.html" %}
 
         <div class="date-nav">
-            <span>Month A:</span>
-            <input type="month" name="month_a" value="{{ month_a_value }}">
-
-            <span>Month B:</span>
-            <input type="month" name="month_b" value="{{ month_b_value }}">
+            <span>Top:</span>
+            <select name="top_n">
+                {% for option in top_n_options %}
+                <option value="{{ option }}" {{ 'selected' if top_n == option }}>{{ option }}</option>
+                {% endfor %}
+            </select>
 
             <span>Exclude:</span>
             <input type="text" name="exclude" value="{{ exclude_raw }}" placeholder="e.g. Alex, Sarah">
-
-            <button id="submit">Go</button>
         </div>
     </form>
 
@@ -35,23 +36,25 @@
             <thead>
                 <tr>
                     <th>Name</th>
-                    <th class="text-center">{{ label_a }}</th>
-                    <th class="text-center">{{ label_b }}</th>
+                    {% for label in bucket_labels %}
+                    <th class="text-center">{{ label }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
                 {% for row in heatmap_rows %}
                 <tr>
                     <td>{{ row.name }}</td>
-                    <td class="text-center" style="background-color: {{ row.color_a }}">{{ row.count_a }}</td>
-                    <td class="text-center" style="background-color: {{ row.color_b }}">{{ row.count_b }}</td>
+                    {% for cell in row.cells %}
+                    <td class="text-center" style="background-color: {{ cell.color }}">{{ cell.count }}</td>
+                    {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     {% else %}
-    <p class="tag-empty">No name mentions in either month.</p>
+    <p class="tag-empty">No name mentions in this range.</p>
     {% endif %}
 </div>
 </body>
