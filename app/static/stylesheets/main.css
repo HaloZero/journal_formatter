@@ -420,9 +420,10 @@ pre .positive_2 {
 	margin-bottom: 4px;
 }
 
-/* Chart report pages (words, ngrams, sentiment, places, names) */
+/* Date pickers (home, day-in-history, and the chart report pages) */
 .date-range-nav,
-.year-nav {
+.year-nav,
+.date-nav {
 	display: flex;
 	align-items: center;
 	justify-content: center;

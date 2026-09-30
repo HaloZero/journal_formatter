@@ -1,19 +1,9 @@
-<span>Month:</span>
-<select name="month">
-	{% for month in range(1,13) %}
-		<option value={{ month }} {{ 'selected' if selected_date.month == month }}>
-			{{ month }}
-		</option>
-	{% endfor %}
-</select>
+<div class="date-nav">
+    <span>Date:</span>
+    <input type="date" name="date" value="{{ '%04d-%02d-%02d' % (selected_date.year, selected_date.month, selected_date.day) }}">
+    <span class="info-icon" tabindex="0" aria-label="Why doesn't the year matter?">i
+        <span class="info-tooltip">The year doesn't matter here — pick any date and we'll show every year in your journal that landed on this month and day.</span>
+    </span>
 
-<span>Day:</span>
-<select name="day">
-	{% for day in range(1,31) %}
-		<option value={{ day }} {{ 'selected' if selected_date.day == day }}>
-			{{ day }}
-		</option>
-	{% endfor %}
-</select>
-
-<button id="submit">Go</button>
+    <button id="submit">Go</button>
+</div>
