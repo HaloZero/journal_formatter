@@ -1,6 +1,7 @@
 venv
 __pycache__/
 .DS_Store
+.claude/
 data/
 app/static/photos/*
 !app/static/photos/.gitkeep

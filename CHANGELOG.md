@@ -4,6 +4,17 @@ All notable changes to this project are documented here, newest first. Dates are
 
 ## [Unreleased]
 
+### Added
+- `/search` — free-text search plus dropdowns to search by a specific known name or place. Backs the previously-dead "Search:" forms on the home and day-in-history pages.
+- Entries now render their names/places as deduped pill links (with a `(2)`-style count when mentioned more than once) instead of a raw Python list; clicking one searches for it.
+- `/status`: a "X of Y entries analyzed" summary above the table, per-row checkboxes with a live "N entries selected" count, a "Select Unanalyzed" helper, and a client-side date-range filter (no page reload) replacing the old start/end-month dropdowns. "Analyze Selected" now POSTs just the checked entry IDs to `/analyze`.
+
+### Changed
+- `main.js`/`main.css` split: page-specific behavior and styles (`analyze`, `classify`, `status`) moved into their own files, loaded only by the templates that use them. Only what's shared by 2+ pages stays in `main.js`/`main.css`.
+- Status page table styling cleaned up (padding, `border-collapse`, centered numeric columns, row hover) — it was using unstyled browser table defaults.
+
+## 2026-09-29 — Upload-based import, no more static export file
+
 ### Changed
 - `/import` is now an upload form instead of requiring a file placed at `app/static/diary-downloaded.json` — pick your export and it's parsed and imported directly from the upload, nothing written to disk. That path is gone from the code, docs, and `.gitignore`.
 
