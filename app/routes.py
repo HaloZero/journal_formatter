@@ -27,9 +27,9 @@ logger_config = logging.getLogger('journal.config')
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
 
-# Selectable "show top N" options on /names_comparison
-NAME_SERIES_LIMIT_OPTIONS = [10, 25, 50]
-DEFAULT_NAME_SERIES_LIMIT = 25
+# /names_comparison never shows more than this many names - past this it's dropped
+# entirely rather than lumped into an "Other" bucket
+MAX_COMPARISON_NAMES = 10
 NAME_CHART_COLORS = [
 	Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple,
 	Color.Teal, Color.Maroon, Color.Olive, Color.Navy, Color.Brown,
@@ -293,8 +293,10 @@ def names_over_time():
 
 	data_points = NamesPresenter(entries).bucket_info(DateStyle.DAY)
 
+	excluded_names = _load_excluded_names()
+	candidate_names = [name for name in data_points if name.lower() not in excluded_names]
 	top_names = sorted(
-		data_points.keys(),
+		candidate_names,
 		key=lambda name: sum(data_points[name].values()),
 		reverse=True)[:MAX_NAME_SERIES]
 
@@ -338,12 +340,8 @@ def names_comparison():
 	month_a = _parse_month_param('month_a', default_month_a)
 	month_b = _parse_month_param('month_b', default_month_b)
 
-	limit = int(request.args.get('limit', '0')) or DEFAULT_NAME_SERIES_LIMIT
-	if limit not in NAME_SERIES_LIMIT_OPTIONS:
-		limit = DEFAULT_NAME_SERIES_LIMIT
-
 	exclude_raw = request.args.get('exclude', '')
-	excluded_names = {name.strip().lower() for name in exclude_raw.split(',') if name.strip()}
+	excluded_names = _load_excluded_names() | {name.strip().lower() for name in exclude_raw.split(',') if name.strip()}
 
 	start_a, end_a = _month_bounds(month_a)
 	start_b, end_b = _month_bounds(month_b)
@@ -361,37 +359,57 @@ def names_comparison():
 	label_a = '{} {}'.format(calendar.month_name[month_a.month], month_a.year)
 	label_b = '{} {}'.format(calendar.month_name[month_b.month], month_b.year)
 
+	# Cap at MAX_COMPARISON_NAMES names, strictly by total mentions - names past the
+	# cutoff are just dropped, not lumped into an "Other" bucket (an aggregate of
+	# everyone else would usually dwarf every individual name and defeat the point).
 	candidate_names = [name for name in data_points if name.lower() not in excluded_names]
 	top_names = sorted(
 		candidate_names,
 		key=lambda name: data_points[name].get(key_a, 0) + data_points[name].get(key_b, 0),
-		reverse=True)[:limit]
+		reverse=True)[:MAX_COMPARISON_NAMES]
 
-	chart = charts.NameChart()
-	chart.labels.labels = [label_a, label_b]
-	# Build a fresh data class per request instead of mutating the shared
-	# JournalBaseChart.data class, which every chart type inherits from.
-	chart.data = type('NamesComparisonChartData', (), {})
-	for index, name in enumerate(top_names):
-		buckets = data_points[name]
-		color = NAME_CHART_COLORS[index % len(NAME_CHART_COLORS)]
-		series = type(name, (), {
-			'label': name,
-			'data': [buckets.get(key_a, 0), buckets.get(key_b, 0)],
-			'borderColor': color,
-			'backgroundColor': color,
-			'fill': False,
-		})
-		setattr(chart.data, name, series)
+	counts_a = [data_points[name].get(key_a, 0) for name in top_names]
+	counts_b = [data_points[name].get(key_b, 0) for name in top_names]
 
+	chart = charts.NameComparisonChart()
+	chart.labels.labels = top_names
+	chart.data = type('NamesComparisonChartData', (), {
+		'month_a': type('MonthASeries', (), {
+			'label': label_a,
+			'data': counts_a,
+			'borderColor': NAME_CHART_COLORS[0],
+			'backgroundColor': NAME_CHART_COLORS[0],
+		}),
+		'month_b': type('MonthBSeries', (), {
+			'label': label_b,
+			'data': counts_b,
+			'borderColor': NAME_CHART_COLORS[1],
+			'backgroundColor': NAME_CHART_COLORS[1],
+		}),
+	})
 	chartJSON = chart.get()
+
+	max_count = max(counts_a + counts_b, default=0)
+	heatmap_rows = [
+		{
+			'name': name,
+			'count_a': count_a,
+			'count_b': count_b,
+			'color_a': _heatmap_color(count_a, max_count),
+			'color_b': _heatmap_color(count_b, max_count),
+		}
+		for name, count_a, count_b in zip(top_names, counts_a, counts_b)
+	]
+
 	template_args = {
 		'chartJSON': chartJSON,
 		'month_a_value': month_a.strftime('%Y-%m'),
 		'month_b_value': month_b.strftime('%Y-%m'),
-		'limit': limit,
-		'limit_options': NAME_SERIES_LIMIT_OPTIONS,
+		'label_a': label_a,
+		'label_b': label_b,
 		'exclude_raw': exclude_raw,
+		'heatmap_rows': heatmap_rows,
+		'max_comparison_names': MAX_COMPARISON_NAMES,
 	}
 
 	return render_template('names_comparison.html', **template_args)
@@ -458,6 +476,15 @@ def _parse_month_param(param_name, default):
 
 def _month_bounds(month_start):
 	return month_start, month_start + relativedelta(months=+1) - relativedelta(days=+1)
+
+def _load_excluded_names():
+	return {excluded_name.name.lower() for excluded_name in models.ExcludedName.query.all()}
+
+def _heatmap_color(value, max_value):
+	"""Blue at an opacity proportional to value/max_value, so cells are comparable
+	at a glance; a small floor keeps zero-mention cells visible instead of blank white."""
+	alpha = 0.06 + 0.74 * (value / max_value) if max_value > 0 else 0.06
+	return 'rgba(100, 156, 199, {:.2f})'.format(alpha)
 
 def _distinct_array_values(column):
 	rows = db.session.query(func.unnest(column).label('value')).distinct().all()
@@ -565,7 +592,9 @@ def config():
 
 	known_names = models.KnownName.query.order_by(models.KnownName.name).all()
 	known_locations = models.KnownLocation.query.order_by(models.KnownLocation.location).all()
-	return render_template('config.html', known_names=known_names, known_locations=known_locations)
+	excluded_names = models.ExcludedName.query.order_by(models.ExcludedName.name).all()
+	return render_template('config.html',
+		known_names=known_names, known_locations=known_locations, excluded_names=excluded_names)
 
 @app.route('/config/delete/<int:known_name_id>', methods=['POST'])
 def config_delete(known_name_id):
@@ -593,4 +622,23 @@ def config_delete_location(known_location_id):
 		db.session.delete(known_location)
 		db.session.commit()
 		logger_config.info("Removed known location '%s'", known_location.location)
+	return redirect(url_for('config'))
+
+@app.route('/config/excluded_names', methods=['POST'])
+def config_add_excluded_name():
+	name = request.form.get('excluded_name', '').strip()
+	already_excluded = models.ExcludedName.query.filter(func.lower(models.ExcludedName.name) == name.lower()).first()
+	if name and not already_excluded:
+		db.session.add(models.ExcludedName(name=name))
+		db.session.commit()
+		logger_config.info("Added excluded name '%s'", name)
+	return redirect(url_for('config'))
+
+@app.route('/config/excluded_names/delete/<int:excluded_name_id>', methods=['POST'])
+def config_delete_excluded_name(excluded_name_id):
+	excluded_name = models.ExcludedName.query.get(excluded_name_id)
+	if excluded_name is not None:
+		db.session.delete(excluded_name)
+		db.session.commit()
+		logger_config.info("Removed excluded name '%s'", excluded_name.name)
 	return redirect(url_for('config'))

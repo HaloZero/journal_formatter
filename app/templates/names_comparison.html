@@ -11,7 +11,7 @@
             <span><h2>Compare Names by Month</h2></span>
         </div>
 
-        <p class="chart-explainer">Pick two months to compare how often each name was mentioned. Click a name in the chart's legend to hide or show its line.</p>
+        <p class="chart-explainer">Pick two months to compare how often each name was mentioned. Shows at most the top {{ max_comparison_names }} names by total mentions - names past that are dropped rather than lumped into an "Other" bucket. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
 
         <div class="date-nav">
             <span>Month A:</span>
@@ -19,13 +19,6 @@
 
             <span>Month B:</span>
             <input type="month" name="month_b" value="{{ month_b_value }}">
-
-            <span>Show top:</span>
-            <select name="limit">
-                {% for option in limit_options %}
-                <option value="{{ option }}" {{ 'selected' if limit == option }}>{{ option }}</option>
-                {% endfor %}
-            </select>
 
             <span>Exclude:</span>
             <input type="text" name="exclude" value="{{ exclude_raw }}" placeholder="e.g. Alex, Sarah">
@@ -35,6 +28,31 @@
     </form>
 
     {% include "_chart.html" %}
+
+    {% if heatmap_rows %}
+    <div class="table-container heatmap-container">
+        <table class="heatmap-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th class="text-center">{{ label_a }}</th>
+                    <th class="text-center">{{ label_b }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in heatmap_rows %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td class="text-center" style="background-color: {{ row.color_a }}">{{ row.count_a }}</td>
+                    <td class="text-center" style="background-color: {{ row.color_b }}">{{ row.count_b }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="tag-empty">No name mentions in either month.</p>
+    {% endif %}
 </div>
 </body>
 </html>

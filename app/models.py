@@ -98,6 +98,13 @@ class KnownLocation(db.Model):
     def __repr__(self):
         return '<KnownLocation {}>'.format(self.location)
 
+class ExcludedName(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String, unique=True, nullable=False)
+
+    def __repr__(self):
+        return '<ExcludedName {}>'.format(self.name)
+
 class JournalPhoto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     journal_entry_id = db.Column(db.Integer, db.ForeignKey('journal_entry.id'), index=True, nullable=False)

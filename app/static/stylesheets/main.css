@@ -437,3 +437,12 @@ pre .positive_2 {
 	margin: 0 auto 15px;
 	color: #555555;
 }
+
+.heatmap-container {
+	max-width: 500px;
+	margin-top: 25px;
+}
+
+.heatmap-table td {
+	font-weight: bold;
+}

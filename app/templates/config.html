@@ -93,6 +93,48 @@
 		<p class="tag-empty">No known locations yet.</p>
 		{% endif %}
 	</div>
+
+	<div class="empty-state">
+		<h2>Excluded Names</h2>
+		<p>Names listed here are always left out of the name-mention charts (<a href="{{ url_for('names_over_time') }}">Names</a>, <a href="{{ url_for('names_comparison') }}">Compare Names by Month</a>) - useful for a name that's mentioned so often it drowns out everything else. This doesn't affect analysis - the name is still recorded on entries, just excluded from these charts.</p>
+
+		<form class="search-form" method="post" action="{{ url_for('config_add_excluded_name') }}">
+			<div class="search-fields">
+				<div class="search-field">
+					<label for="excluded_name">Name</label>
+					<input type="text" id="excluded_name" name="excluded_name" placeholder="e.g. Mel" required>
+				</div>
+				<button type="submit">Add</button>
+			</div>
+		</form>
+
+		{% if excluded_names %}
+		<div class="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for excluded_name in excluded_names %}
+					<tr>
+						<td>{{ excluded_name.name }}</td>
+						<td class="text-center">
+							<form method="post" action="{{ url_for('config_delete_excluded_name', excluded_name_id=excluded_name.id) }}">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<p class="tag-empty">No excluded names yet.</p>
+		{% endif %}
+	</div>
 </div>
 </body>
 </html>
