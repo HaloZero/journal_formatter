@@ -24,9 +24,9 @@ There's some sentiment analysis by default that uses the NLTK parser to analyze 
 
 Entries are run through spaCy's named entity recognition (`en_core_web_trf`, a transformer model — more accurate than spaCy's non-transformer models, at the cost of a much heavier dependency and slower per-entry processing) to pull out people (`entry.names`) and places (`entry.locations`) mentioned in each entry — more accurate than the old NLTK POS-tag heuristic, and it catches multi-word places too.
 
-### Places Timeline
+### Places
 
-`/places` clusters your location mentions into date ranges (mentions within `TIMELINE_GAP_DAYS` of each other, default 14, are treated as one continuous stretch) to give a rough sense of when you were where — e.g. "Tokyo: Jun–Sep 2019". It's mention-based, not GPS-based, so it reflects what you wrote about, not necessarily where you physically were.
+`/places` ranks the locations mentioned across your entries by total mentions, alongside how many unique days each one was mentioned on. It's mention-based, not GPS-based, so it reflects what you wrote about, not necessarily where you physically were.
 
 ### Photos
 

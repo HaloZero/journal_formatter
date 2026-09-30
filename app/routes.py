@@ -16,7 +16,7 @@ from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
 from app.classifier import Classifier
-from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter, LocationTimelinePresenter
+from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresenter, NGramPresenter, WordPresenter, NamesPresenter, LocationTotalsPresenter
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
@@ -433,11 +433,10 @@ def places_timeline():
 		and_(models.JournalEntry.entry_date >= start_of_range,
 			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date)
 
-	gap_days = app.config['TIMELINE_GAP_DAYS']
-	timeline = LocationTimelinePresenter(entries, gap_days=gap_days).timeline()
+	totals = LocationTotalsPresenter(entries).totals()
 
 	template_args = {
-		'timeline': timeline,
+		'totals': totals,
 		'formAction':'/places'
 	}
 
@@ -528,11 +527,13 @@ def _distinct_array_values(column):
 def entries_status():
 	entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).all()
 	analyzed_count = sum(1 for entry in entries if entry.word_count is not None)
+	last_analyzed_at = db.session.query(func.max(models.JournalEntry.analyzed_at)).scalar()
 
 	return render_template('status.html',
 		entries=entries,
 		total_count=len(entries),
-		analyzed_count=analyzed_count)
+		analyzed_count=analyzed_count,
+		last_analyzed_at=last_analyzed_at)
 
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
@@ -570,8 +571,8 @@ def import_entries():
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = JournalImporter(entries)
-	operation_threads[thread_id].run()
-	logger.info("Imported %d entries from uploaded file %s", len(entries), uploaded_file.filename)
+	operation_threads[thread_id].start()
+	logger.info("Starting import of %d entries from uploaded file %s", len(entries), uploaded_file.filename)
 
 	return render_template('analyze.html', thread_id=thread_id)
 
@@ -591,7 +592,7 @@ def analyze_entries():
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = JournalEntryAnalyzer(entries)
-	operation_threads[thread_id].run()
+	operation_threads[thread_id].start()
 
 	return render_template('analyze.html', thread_id=thread_id)
 
@@ -601,16 +602,18 @@ def import_photos():
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = PhotoImporter()
-	operation_threads[thread_id].run()
+	operation_threads[thread_id].start()
 
 	return render_template('analyze.html', thread_id=thread_id)
 
 @app.route('/progress-analyze/<int:thread_id>')
 def analyze_progress(thread_id):
-	global operation_thread
+	operation_thread = operation_threads.get(thread_id)
+	if operation_thread is None:
+		return {'error': 'Unknown thread_id'}, 404
 
-	percent_complete = operation_threads[thread_id].percent_complete
-	total_entries = operation_threads[thread_id].total_entries_to_analyze
+	percent_complete = operation_thread.percent_complete
+	total_entries = operation_thread.total_entries_to_analyze
 	return {'percent_complete': percent_complete, 'total_entries': total_entries }
 
 @app.route('/config', methods=['GET', 'POST'])

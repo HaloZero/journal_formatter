@@ -5,6 +5,8 @@ import string
 import threading
 import time
 
+from datetime import datetime
+
 from app import app, db
 from app.geography import is_real_location
 
@@ -48,13 +50,19 @@ class JournalEntryAnalyzer(threading.Thread):
 		return {known_location.location.lower() for known_location in KnownLocation.query.all()}
 
 	def run(self):
-		for entry in self.entries:
-			self._analyze(entry)
-			self.entries_analyzed += 1
-			self.percent_complete = float(self.entries_analyzed) / float(self.total_entries_to_analyze)
-		db.session.commit()
-		if self.total_entries_to_analyze == 0:
-			self.percent_complete = float(1) / float(1)
+		with app.app_context():
+			start_time = time.time()
+			logger.info("Starting analysis of %d entries", self.total_entries_to_analyze)
+			for entry in self.entries:
+				self._analyze(entry)
+				self.entries_analyzed += 1
+				self.percent_complete = float(self.entries_analyzed) / float(self.total_entries_to_analyze)
+			db.session.commit()
+			if self.total_entries_to_analyze == 0:
+				self.percent_complete = float(1) / float(1)
+			logger.info(
+				"Analysis complete in %.2fs: %d entries analyzed",
+				time.time() - start_time, self.entries_analyzed)
 
 	def _analyze(self, entry):
 		"""
@@ -76,6 +84,7 @@ class JournalEntryAnalyzer(threading.Thread):
 		entry.sentence_count = sentence_count
 		entry.names = names
 		entry.locations = locations
+		entry.analyzed_at = datetime.utcnow()
 
 	def _entities(self, doc, entry_text):
 		names = []

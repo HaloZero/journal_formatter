@@ -19,18 +19,16 @@
             <thead>
                 <tr>
                     <th>Location</th>
-                    <th>Start</th>
-                    <th>End</th>
                     <th>Mentions</th>
+                    <th>Unique Days</th>
                 </tr>
             </thead>
             <tbody>
-                {% for range in timeline %}
+                {% for total in totals %}
                 <tr>
-                    <td>{{ range.location }}</td>
-                    <td>{{ range.start_date.strftime("%B %d, %Y") }}</td>
-                    <td>{{ range.end_date.strftime("%B %d, %Y") }}</td>
-                    <td>{{ range.mention_count }}</td>
+                    <td>{{ total.location }}</td>
+                    <td>{{ total.mention_count }}</td>
+                    <td>{{ total.unique_days }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

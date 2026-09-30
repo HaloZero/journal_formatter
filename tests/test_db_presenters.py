@@ -2,7 +2,7 @@ from datetime import date
 
 from tests.factories import make_journal_entry, make_journal_photo
 from app.parsers import DateRangeParser, RequestLengthStyle
-from app.presenters import DateStyle, NamesPresenter, LocationTimelinePresenter, SentimentBucketPresenter
+from app.presenters import DateStyle, NamesPresenter, LocationTotalsPresenter, SentimentBucketPresenter
 
 
 class MockRequest:
@@ -23,29 +23,27 @@ def test_names_presenter_buckets_by_day():
 	assert buckets["Marco"]["02-01-2020"] == 1
 
 
-def test_location_timeline_merges_mentions_within_gap():
-	make_journal_entry(entry_date=date(2019, 6, 1), locations=["Tokyo"])
+def test_location_totals_counts_mentions_and_unique_days():
+	make_journal_entry(entry_date=date(2019, 6, 1), locations=["Tokyo", "Tokyo"])
 	make_journal_entry(entry_date=date(2019, 6, 10), locations=["Tokyo"])
 
 	entries = _all_entries()
-	timeline = LocationTimelinePresenter(entries, gap_days=14).timeline()
+	totals = LocationTotalsPresenter(entries).totals()
 
-	assert len(timeline) == 1
-	assert timeline[0]['location'] == 'Tokyo'
-	assert timeline[0]['start_date'] == date(2019, 6, 1)
-	assert timeline[0]['end_date'] == date(2019, 6, 10)
-	assert timeline[0]['mention_count'] == 2
+	assert len(totals) == 1
+	assert totals[0]['location'] == 'Tokyo'
+	assert totals[0]['mention_count'] == 3
+	assert totals[0]['unique_days'] == 2
 
 
-def test_location_timeline_splits_mentions_past_gap():
+def test_location_totals_sorted_by_mention_count_descending():
 	make_journal_entry(entry_date=date(2019, 6, 1), locations=["Tokyo"])
-	make_journal_entry(entry_date=date(2019, 9, 15), locations=["Tokyo"])
+	make_journal_entry(entry_date=date(2019, 6, 10), locations=["Tokyo", "Paris"])
 
 	entries = _all_entries()
-	timeline = LocationTimelinePresenter(entries, gap_days=14).timeline()
+	totals = LocationTotalsPresenter(entries).totals()
 
-	assert len(timeline) == 2
-	assert [r['start_date'] for r in timeline] == [date(2019, 6, 1), date(2019, 9, 15)]
+	assert [t['location'] for t in totals] == ['Tokyo', 'Paris']
 
 
 def test_journal_entry_photos_relationship():

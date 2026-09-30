@@ -7,7 +7,7 @@ HOST := 127.0.0.1
 
 export FLASK_APP := app
 
-.PHONY: help venv install setup db-init db-start db-stop db-restart db-status db-create \
+.PHONY: help venv install setup db-init db-start db-stop db-restart db-status db-create db-ensure \
 	migrate migration run shell test import analyze analyze-unanalyzed import-photos clean
 
 help:
@@ -60,13 +60,16 @@ db-status:
 db-create:
 	./bin/db.sh create
 
+db-ensure:
+	@./bin/db.sh status > /dev/null 2>&1 || ./bin/db.sh start
+
 migrate:
 	$(FLASK) db upgrade
 
 migration:
 	$(FLASK) db migrate -m "$(name)"
 
-run:
+run: db-ensure
 	$(FLASK) run --host $(HOST) --port $(PORT) --debug
 
 shell:

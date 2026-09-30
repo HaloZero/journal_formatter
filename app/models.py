@@ -18,6 +18,7 @@ class JournalEntry(db.Model):
     sentence_count = db.Column(db.Integer)
     paragraph_count = db.Column(db.Integer)
     daily_score = db.Column(db.Integer)
+    analyzed_at = db.Column(db.DateTime)
     photos = db.relationship('JournalPhoto', backref='journal_entry', order_by='JournalPhoto.created_at')
 
     def __repr__(self):

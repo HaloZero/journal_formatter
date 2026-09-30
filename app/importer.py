@@ -1,8 +1,12 @@
+import logging
 import threading
+import time
 
-from app import db, models
+from app import app, db, models
 from datetime import datetime
 from typing import Protocol
+
+logger = logging.getLogger('journal.importer')
 
 class JournalRecord(Protocol):
 	def entryDate():
@@ -17,15 +21,22 @@ class JournalImporter(threading.Thread):
 		self.entries_imported = 0
 		self.percent_complete = 0
 		self.total_entries_to_analyze = len(self.entries)
+		super().__init__()
 
 	def run(self):
-		for entry in self.entries:
-			self._import(entry)
-			self.entries_imported += 1
-			self.percent_complete = float(self.entries_imported) / float(self.total_entries_to_analyze)
-		if self.total_entries_to_analyze == 0:
-			self.percent_complete = float(1) / float(1)
-		db.session.commit()
+		with app.app_context():
+			start_time = time.time()
+			logger.info("Starting import of %d entries", self.total_entries_to_analyze)
+			for entry in self.entries:
+				self._import(entry)
+				self.entries_imported += 1
+				self.percent_complete = float(self.entries_imported) / float(self.total_entries_to_analyze)
+			if self.total_entries_to_analyze == 0:
+				self.percent_complete = float(1) / float(1)
+			db.session.commit()
+			logger.info(
+				"Import complete in %.2fs: %d entries imported",
+				time.time() - start_time, self.entries_imported)
 
 	def _import(self, entry: JournalRecord):
 		entry_date = entry.entryDate()

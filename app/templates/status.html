@@ -11,6 +11,7 @@
     <h2>Entry Status</h2>
 
     <p class="status-summary">{{ analyzed_count }} of {{ total_count }} entries analyzed</p>
+    <p class="status-summary">Last analyzed: {{ last_analyzed_at.strftime("%B %d, %Y %H:%M") if last_analyzed_at else "Never" }}</p>
 
     <div class="date-filter">
         <span>From:</span>

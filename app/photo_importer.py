@@ -29,20 +29,21 @@ class PhotoImporter(threading.Thread):
 		super().__init__()
 
 	def run(self):
-		start_time = time.monotonic()
-		logger.info("Starting photo scan of %s (%d files found)", self.source_dir, self.total_entries_to_analyze)
+		with app.app_context():
+			start_time = time.monotonic()
+			logger.info("Starting photo scan of %s (%d files found)", self.source_dir, self.total_entries_to_analyze)
 
-		for index, file_path in enumerate(self._files):
-			self._import_photo(file_path)
-			self.percent_complete = float(index + 1) / float(self.total_entries_to_analyze)
-		db.session.commit()
-		if self.total_entries_to_analyze == 0:
-			self.percent_complete = float(1) / float(1)
+			for index, file_path in enumerate(self._files):
+				self._import_photo(file_path)
+				self.percent_complete = float(index + 1) / float(self.total_entries_to_analyze)
+			db.session.commit()
+			if self.total_entries_to_analyze == 0:
+				self.percent_complete = float(1) / float(1)
 
-		elapsed = time.monotonic() - start_time
-		logger.info(
-			"Photo scan complete in %.2fs: %d imported, %d skipped",
-			elapsed, self.photos_imported, self.photos_skipped)
+			elapsed = time.monotonic() - start_time
+			logger.info(
+				"Photo scan complete in %.2fs: %d imported, %d skipped",
+				elapsed, self.photos_imported, self.photos_skipped)
 
 	def _discover_files(self):
 		if not os.path.isdir(self.source_dir):
