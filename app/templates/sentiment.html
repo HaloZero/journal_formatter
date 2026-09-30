@@ -8,10 +8,20 @@
 <div class="content">
     <form method="get" action={{ formAction }}>
         <div>
-            <span><h2>Sentiment</h2></span>
+            <span><h2>{{ heading }}
+                <span class="info-icon" tabindex="0" aria-label="What is the sentiment score?">i
+                    <span class="info-tooltip">Ranges from -1 (most negative) to +1 (most positive). Around 0 is neutral.</span>
+                </span>
+            </h2></span>
         </div>
 
-        {% include "_range_nav.html" %}
+        <p class="chart-explainer">{{ description }}</p>
+
+        {% if page == 'year' %}
+            {% include "_year_select_nav.html" %}
+        {% else %}
+            {% include "_range_nav.html" %}
+        {% endif %}
     </form>
 
     {% include "_chart.html" %}

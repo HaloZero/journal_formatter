@@ -1,0 +1,10 @@
+<div class="year-nav">
+    <span>Year:</span>
+    <select name="year">
+        {% for year in years %}
+            <option value="{{ year }}" {{ 'selected' if selected_year == year }}>{{ year }}</option>
+        {% endfor %}
+    </select>
+
+    <button id="submit">Go</button>
+</div>

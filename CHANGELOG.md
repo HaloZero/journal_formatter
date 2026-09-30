@@ -12,6 +12,9 @@ All notable changes to this project are documented here, newest first. Dates are
 ### Changed
 - `main.js`/`main.css` split: page-specific behavior and styles (`analyze`, `classify`, `status`) moved into their own files, loaded only by the templates that use them. Only what's shared by 2+ pages stays in `main.js`/`main.css`.
 - Status page table styling cleaned up (padding, `border-collapse`, centered numeric columns, row hover) — it was using unstyled browser table defaults.
+- Chart report pages (`/words`, `/ngrams`, `/sentiment`, `/distribution_sentiment`, `/places`, `/names`) now pick their date range with two native month pickers instead of four separate month/year dropdowns.
+- `/monthly_sentiment` now takes a single year (a dropdown, since it aggregates every entry into 12 calendar-month buckets regardless of range) instead of the same start/end range picker as the other sentiment views.
+- Sentiment chart pages now show a heading and short description of what each view means, plus the same "-1 to +1, 0 is neutral" tooltip already used on individual entries.
 
 ## 2026-09-29 — Upload-based import, no more static export file
 

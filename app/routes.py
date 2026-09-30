@@ -185,7 +185,10 @@ def sentiment():
 	chartJSON = chart.get()
 	template_args = {
 		'chartJSON': chartJSON,
-		'formAction':'/sentiment'
+		'formAction':'/sentiment',
+		'heading': 'Sentiment Over Time',
+		'description': 'Average sentiment score for entries in the selected range, grouped by month (or by year for ranges longer than two years).',
+		'page': 'range',
 	}
 
 	template_args.update(parser.template_args())
@@ -194,10 +197,11 @@ def sentiment():
 
 @app.route('/monthly_sentiment')
 def sentiment_by_month():
-	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+	years = _calculate_years_for_selector()
+	year = int(request.args.get('year', '0')) or (years[-1] if years else datetime.now().year)
 
-	start_of_range = parser.start_of_range()
-	end_of_range = parser.end_of_range()
+	start_of_range = datetime(year=year, month=1, day=1)
+	end_of_range = datetime(year=year, month=12, day=31)
 
 	entries = models.JournalEntry.query.filter(
 		and_(models.JournalEntry.entry_date >= start_of_range,
@@ -213,10 +217,13 @@ def sentiment_by_month():
 	chartJSON = chart.get()
 	template_args = {
 		'chartJSON': chartJSON,
-		'formAction':'/monthly_sentiment'
+		'formAction':'/monthly_sentiment',
+		'heading': 'Sentiment by Month',
+		'description': 'Average sentiment score for each calendar month within the selected year, to spot seasonal patterns.',
+		'page': 'year',
+		'years': years,
+		'selected_year': year,
 	}
-
-	template_args.update(parser.template_args())
 
 	return render_template('sentiment.html', **template_args)
 
@@ -239,7 +246,10 @@ def distribution_sentiment():
 	chartJSON = chart.get()
 	template_args = {
 		'chartJSON': chartJSON,
-		'formAction':'/distribution_sentiment'
+		'formAction':'/distribution_sentiment',
+		'heading': 'Sentiment Distribution',
+		'description': 'How many days in the selected range fall into each sentiment score bucket, showing the overall shape (mostly neutral, skewed positive, etc.).',
+		'page': 'range',
 	}
 
 	template_args.update(parser.template_args())

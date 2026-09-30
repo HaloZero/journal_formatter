@@ -11,15 +11,21 @@ class RequestLengthStyle(Enum):
 
 class DateRangeParser():
 	def __init__(self, request, style: RequestLengthStyle):
-		self.start_year = int(request.args.get('start_year', '0'))
-		self.start_month = int(request.args.get('start_month', '0'))
-		self.end_year = int(request.args.get('end_year', '0'))
-		self.end_month = int(request.args.get('end_month', '0'))
+		self.start = self._parse_month(request.args.get('start', ''))
+		self.end = self._parse_month(request.args.get('end', ''))
 		self.style = style
 
+	@staticmethod
+	def _parse_month(value):
+		# Matches the value format of <input type="month">, e.g. "2020-05".
+		try:
+			return datetime.strptime(value, '%Y-%m')
+		except ValueError:
+			return None
+
 	def start_of_range(self):
-		if self.start_year and self.start_month:
-			return datetime(year=self.start_year, month=self.start_month, day=1)
+		if self.start:
+			return self.start
 		else:
 			if self.style == RequestLengthStyle.DEFAULT_YEAR:
 				now = datetime.now()
@@ -31,8 +37,8 @@ class DateRangeParser():
 				return first_entry.entry_date if first_entry else datetime.now()
 
 	def end_of_range(self):
-		if self.end_year and self.end_month:
-			return datetime(year=self.end_year, month=self.end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
+		if self.end:
+			return self.end + relativedelta(months=+1) - relativedelta(days=+1)
 		else:
 			if self.style == RequestLengthStyle.DEFAULT_YEAR:
 				now = datetime.now()

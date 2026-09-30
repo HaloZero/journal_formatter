@@ -419,3 +419,20 @@ pre .positive_2 {
 	font-size: 0.85em;
 	margin-bottom: 4px;
 }
+
+/* Chart report pages (words, ngrams, sentiment, places, names) */
+.date-range-nav,
+.year-nav {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	padding-bottom: 15px;
+}
+
+.chart-explainer {
+	max-width: 700px;
+	margin: 0 auto 15px;
+	color: #555555;
+}
