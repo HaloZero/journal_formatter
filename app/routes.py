@@ -46,20 +46,20 @@ def index():
 		return render_template('welcome.html')
 
 	now = datetime.now()
-	year = int(request.args.get('year', '0')) or now.year
-	month = int(request.args.get('month', '0')) or now.month
+	try:
+		start_of_month = datetime.strptime(request.args.get('month', ''), '%Y-%m')
+	except ValueError:
+		start_of_month = datetime(year=now.year, month=now.month, day=1)
 
-	start_of_month = datetime(year=year, month=month, day=1)
 	end_of_month = start_of_month + relativedelta(months=+1) - relativedelta(days=+1)
 
 	entries = models.JournalEntry.query.filter(
 		and_(models.JournalEntry.entry_date >= start_of_month,
 			models.JournalEntry.entry_date <= end_of_month))
 
-	years = _calculate_years_for_selector()
-	selected_date = SelectedDate(year=year, month=month)
+	selected_date = SelectedDate(year=start_of_month.year, month=start_of_month.month)
 
-	return render_template('index.html', entries=entries, years=years, selected_date=selected_date)
+	return render_template('index.html', entries=entries, selected_date=selected_date)
 
 @app.route('/classify_sentences')
 def classify_sentences():
@@ -87,20 +87,25 @@ def classify_sentences_post():
 @app.route('/day_in_history')
 def day_in_history():
 	now = datetime.now()
-	month = int(request.args.get('month', '0')) or now.month
-	day = int(request.args.get('day', '0')) or now.day
+	try:
+		parsed_date = datetime.strptime(request.args.get('date', ''), '%Y-%m-%d')
+		month, day = parsed_date.month, parsed_date.day
+	except ValueError:
+		month, day = now.month, now.day
 
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
 	valid_dates = []
 	if first_entry is not None:
 		for year in range(first_entry.entry_date.year, datetime.now().year+1):
-			valid_dates.append(datetime(year=year, month=month, day=day))
+			try:
+				valid_dates.append(datetime(year=year, month=month, day=day))
+			except ValueError:
+				continue  # e.g. Feb 29 in a non-leap year
 
 	entries = models.JournalEntry.query.filter(models.JournalEntry.entry_date.in_(valid_dates))
-	years = _calculate_years_for_selector()
 	selected_date = SelectedDate(year=now.year, month=month, day=day)
 
-	return render_template('day_in_history.html', entries=entries, years=years, selected_date=selected_date)
+	return render_template('day_in_history.html', entries=entries, selected_date=selected_date)
 
 @app.route('/words')
 def words():
