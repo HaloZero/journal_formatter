@@ -5,7 +5,7 @@ All notable changes to this project are documented here, newest first. Dates are
 ## [Unreleased]
 
 ### Changed
-- Analyzer's spaCy model switched from `en_core_web_lg` to `en_core_web_trf` (a transformer model) for more accurate name/place extraction — e.g. it correctly tags "Alamofire" as `PRODUCT` and "Phat Philly" as `ORG` instead of `PERSON`/`GPE`, so they never reach the name/location lists in the first place. Adds `spacy-transformers`, `torch`, and `transformers` as dependencies; model load is slower (~4-5s) and happens at import time, so `flask run --debug` reloads and the test suite are a few seconds slower now. Existing entries keep whatever they were analyzed with — re-run `/analyze` to reprocess with the new model.
+- Analyzer's spaCy model switched from `en_core_web_lg` to `en_core_web_trf` (a transformer model) for more accurate name/place extraction — e.g. it correctly tags "Alamofire" as `PRODUCT` and "Phat Philly" as `ORG` instead of `PERSON`/`GPE`, so they never reach the name/location lists in the first place. Adds `spacy-transformers`, `torch`, and `transformers` as dependencies. The model (~4-5s to load) is now loaded lazily on first use instead of at import time, so app startup, `flask run --debug` reloads, and the test suite aren't slowed down by it - only the first `/analyze` or `/import` after a (re)start pays the load cost. Existing entries keep whatever they were analyzed with — re-run `/analyze` to reprocess with the new model.
 
 ### Added
 - `/search` — free-text search plus dropdowns to search by a specific known name or place. Backs the previously-dead "Search:" forms on the home and day-in-history pages.
