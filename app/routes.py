@@ -102,7 +102,8 @@ def day_in_history():
 			except ValueError:
 				continue  # e.g. Feb 29 in a non-leap year
 
-	entries = models.JournalEntry.query.filter(models.JournalEntry.entry_date.in_(valid_dates))
+	entries = models.JournalEntry.query.filter(
+		models.JournalEntry.entry_date.in_(valid_dates)).order_by(models.JournalEntry.entry_date.desc())
 	selected_date = SelectedDate(year=now.year, month=month, day=day)
 
 	return render_template('day_in_history.html', entries=entries, selected_date=selected_date)
