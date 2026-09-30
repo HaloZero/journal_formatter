@@ -67,14 +67,19 @@ class JournalEntryAnalyzer(threading.Thread):
 			matched_spans.append((ent.start_char, ent.end_char))
 			if ent.text.lower() in self.known_names:
 				# a known name always wins, even if spaCy mistagged it as a place
-				names.append(ent.text)
+				names.append(self._normalize_name(ent.text))
 			elif ent.label_ in PERSON_LABELS:
-				names.append(ent.text)
+				names.append(self._normalize_name(ent.text))
 			elif ent.label_ in LOCATION_LABELS and self._is_recognized_location(ent.text):
 				locations.append(ent.text)
-		names.extend(self._unrecognized_known_names(entry_text, matched_spans))
+		names.extend(self._normalize_name(name) for name in self._unrecognized_known_names(entry_text, matched_spans))
 		locations.extend(self._unrecognized_known_locations(entry_text, matched_spans))
 		return names, locations
+
+	@staticmethod
+	def _normalize_name(text):
+		"""Title-case names so "Alex", "alex", and "ALEX" all count as the same person."""
+		return text.strip().title()
 
 	def _is_recognized_location(self, text):
 		"""A location only counts if it's a real place (country/US state/city), or
