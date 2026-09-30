@@ -6,13 +6,21 @@
 {% include "_header_nav.html" %}
 
 <div class="content">
-	<div class="thread" data-thread="{{ thread_id }}">
-		<div class="progress-container">
-			<h1>Starting Processing</h1>
-			<h3>Processing ...</h3>
+	{% if error %}
+		<div class="empty-state">
+			<h2>Import didn't run</h2>
+			<p>{{ error }}</p>
+			<p><a href="/import">Try again</a></p>
 		</div>
-		<progress id="analysis-progress" value="0" max="100">0% </progress>	
-	</div>
+	{% else %}
+		<div class="thread" data-thread="{{ thread_id }}">
+			<div class="progress-container">
+				<h1>Starting Processing</h1>
+				<h3>Processing ...</h3>
+			</div>
+			<progress id="analysis-progress" value="0" max="100">0% </progress>
+		</div>
+	{% endif %}
 </div>
 </body>
 </html>

@@ -1,5 +1,6 @@
 import calendar
 import json
+import logging
 import os
 import pdb
 import nltk
@@ -23,6 +24,8 @@ from app.parsers import DateRangeParser, RequestLengthStyle
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
+
+logger = logging.getLogger('journal.import')
 
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
@@ -371,14 +374,30 @@ def _calculate_years_for_selector():
 def import_entries():
 	global operation_threads
 
-	thread_id = random.randint(0, 10000)
-
 	filepath = os.path.join(APP_STATIC, 'diary-downloaded.json')
-	with open(filepath) as f:
-		data = json.load(f)
+
+	if not os.path.exists(filepath):
+		logger.warning("Import requested but %s does not exist", filepath)
+		return render_template('analyze.html', error=(
+			"No export found at app/static/diary-downloaded.json. "
+			"Save your journal export there, then click Import again."
+		))
+
+	try:
+		with open(filepath) as f:
+			data = json.load(f)
 		entries = DailyDiaryJournalEntry.mapFromJSON(data)
-		operation_threads[thread_id] = JournalImporter(entries)
-		operation_threads[thread_id].run()
+	except (json.JSONDecodeError, KeyError, TypeError) as error:
+		logger.error("Could not read %s: %s", filepath, error)
+		return render_template('analyze.html', error=(
+			"app/static/diary-downloaded.json couldn't be read ({}). "
+			"Check that it's valid JSON in the expected format."
+		).format(error))
+
+	thread_id = random.randint(0, 10000)
+	operation_threads[thread_id] = JournalImporter(entries)
+	operation_threads[thread_id].run()
+	logger.info("Imported %d entries from %s", len(entries), filepath)
 
 	return render_template('analyze.html', thread_id=thread_id)
 
