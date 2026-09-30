@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+	<div class="empty-state">
+		<h2>Import your journal</h2>
+		<p>Select your journal export (JSON) to import it.</p>
+		<form method="post" action="/import" enctype="multipart/form-data">
+			<input type="file" name="export_file" accept="application/json,.json" required>
+			<button type="submit">Import</button>
+		</form>
+	</div>
+</div>
+</body>
+</html>

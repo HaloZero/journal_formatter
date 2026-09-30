@@ -4,6 +4,25 @@ All notable changes to this project are documented here, newest first. Dates are
 
 ## [Unreleased]
 
+### Changed
+- `/import` is now an upload form instead of requiring a file placed at `app/static/diary-downloaded.json` — pick your export and it's parsed and imported directly from the upload, nothing written to disk. That path is gone from the code, docs, and `.gitignore`.
+
+### Added
+- Uploads via `/import` are capped at 20MB (`MAX_CONTENT_LENGTH`).
+
+## 2026-09-29 — Nav redesign, welcome page, import hardening, dev server fixes
+
+### Added
+- Responsive nav: the 9 flat links are grouped into a "Charts" dropdown (down to 4 top-level items), collapsing to a hamburger menu below 700px; added the missing viewport meta tag and made `.entry` and the places/status tables fluid instead of overflowing on narrow screens.
+- `welcome.html` — a real setup-instructions page for a fresh install with zero entries, instead of an empty search/list view. `/import` added directly to the nav (previously only reachable by typing the URL).
+- `make run` now passes `--debug`, so the dev server auto-reloads on file changes.
+
+### Fixed
+- `/import` failed with a raw traceback on a missing file, invalid JSON, or JSON in the wrong shape, instead of a friendly, logged error with a way to try again.
+- Dev server defaulted to port 5000, which macOS's AirPlay Receiver silently intercepts on `localhost` (403, nothing in Flask's log, request never arrives) — default moved to 8571.
+
+## 2026-09-29 — Empty-database crashes, /names chart, Makefile
+
 ### Fixed
 - `SentimentBucketPresenter.bucket_info()` raised `KeyError` on an empty database (all buckets zero) — the leading/trailing-empty-bucket trim deleted keys from the dict while a second pass still iterated the original key list.
 - `/names` crashed on render (`dict_values` isn't JSON-serializable) and, even fixed, never actually drew a usable chart — rebuilt it to render one correctly colored, legended line per name (capped to the top 15 by mention count) instead of dumping raw bucket dicts into the chart payload. Also stopped it from mutating pyChart.JS's shared `data`/`options` classes, which every chart type inherits — the old one-liner already did this on a smaller scale, and the naive per-name fix would have leaked accumulating dataset attributes across every future request.

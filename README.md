@@ -42,7 +42,7 @@ Depending on how you keep the format of your journal you'll need to do a few thi
 
 ### JSON
 
-If your journal can be exported to JSON this is the easiest solution. Just create a file in `static/diary-download.json` and then implement your own class that implements the protocol `JournalRecord` in `importer.py`. You can see an example of this with `DailyDiaryJournalEntry`.
+If your journal can be exported to JSON this is the easiest solution. Implement your own class that implements the protocol `JournalRecord` in `importer.py` (see `DailyDiaryJournalEntry` for an example), then upload the export file through the form at `/import`. Nothing gets written to disk — the upload is parsed and imported directly.
 
 ### CSV
 
@@ -67,8 +67,8 @@ Effectively you'll need to build your own parser and just make each record confo
    ```
    `./bin/db.sh stop` shuts it down; `./bin/db.sh status` checks whether it's running. It listens on port 5433 by default (override with `PGPORT`), so it won't collide with a system Postgres on 5432. `DATABASE_URL` defaults to this cluster; set it yourself to point elsewhere instead.
 3) Run Migrations. `flask db upgrade`
-4) Start the app server `flask run`
-5) In a web browser go to `/import` to start importing your records.
+4) Start the app server `make run`
+5) In a web browser go to `/import` and upload your export to start importing your records.
 6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries, or `/import_photos` to pull in photos from `data/photos/` (see below).
 
 You should be able to then see records on your localhost!

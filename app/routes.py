@@ -1,7 +1,6 @@
 import calendar
 import json
 import logging
-import os
 import pdb
 import nltk
 import random
@@ -21,9 +20,6 @@ from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
 from app.parsers import DateRangeParser, RequestLengthStyle
-
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
-APP_STATIC = os.path.join(APP_ROOT, 'static')
 
 logger = logging.getLogger('journal.import')
 
@@ -370,34 +366,33 @@ def _calculate_years_for_selector():
 
 	return years
 
-@app.route('/import')
+@app.route('/import', methods=['GET', 'POST'])
 def import_entries():
 	global operation_threads
 
-	filepath = os.path.join(APP_STATIC, 'diary-downloaded.json')
+	if request.method == 'GET':
+		return render_template('import.html')
 
-	if not os.path.exists(filepath):
-		logger.warning("Import requested but %s does not exist", filepath)
+	uploaded_file = request.files.get('export_file')
+	if not uploaded_file or not uploaded_file.filename:
+		logger.warning("Import submitted with no file selected")
 		return render_template('analyze.html', error=(
-			"No export found at app/static/diary-downloaded.json. "
-			"Save your journal export there, then click Import again."
+			"Choose a journal export file to import."
 		))
 
 	try:
-		with open(filepath) as f:
-			data = json.load(f)
+		data = json.load(uploaded_file.stream)
 		entries = DailyDiaryJournalEntry.mapFromJSON(data)
 	except (json.JSONDecodeError, KeyError, TypeError) as error:
-		logger.error("Could not read %s: %s", filepath, error)
+		logger.error("Could not read uploaded file %s: %s", uploaded_file.filename, error)
 		return render_template('analyze.html', error=(
-			"app/static/diary-downloaded.json couldn't be read ({}). "
-			"Check that it's valid JSON in the expected format."
-		).format(error))
+			"{} couldn't be read ({}). Check that it's valid JSON in the expected format."
+		).format(uploaded_file.filename, error))
 
 	thread_id = random.randint(0, 10000)
 	operation_threads[thread_id] = JournalImporter(entries)
 	operation_threads[thread_id].run()
-	logger.info("Imported %d entries from %s", len(entries), filepath)
+	logger.info("Imported %d entries from uploaded file %s", len(entries), uploaded_file.filename)
 
 	return render_template('analyze.html', thread_id=thread_id)
 

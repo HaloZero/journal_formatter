@@ -1,7 +1,6 @@
 venv
 __pycache__/
 .DS_Store
-app/static/diary-downloaded.json
 data/
 app/static/photos/*
 !app/static/photos/.gitkeep
