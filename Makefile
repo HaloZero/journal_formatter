@@ -2,7 +2,7 @@ VENV := venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 FLASK := $(VENV)/bin/flask
-PORT := 5000
+PORT := 8571
 HOST := 127.0.0.1
 
 export FLASK_APP := app
