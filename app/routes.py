@@ -42,6 +42,9 @@ class SelectedDate:
 
 @app.route('/')
 def index():
+	if models.JournalEntry.query.first() is None:
+		return render_template('welcome.html')
+
 	now = datetime.now()
 	year = int(request.args.get('year', '0')) or now.year
 	month = int(request.args.get('month', '0')) or now.month
