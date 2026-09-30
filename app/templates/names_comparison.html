@@ -11,7 +11,7 @@
             <span><h2>Top Names Over Time</h2></span>
         </div>
 
-        <p class="chart-explainer">Pick a date range - it's consolidated into up to 20 time periods automatically. Each bar is the total mentions of that period's top {{ top_n }} names; the heatmap below breaks that back out by name. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
+        <p class="chart-explainer">Pick a date range - it's consolidated into up to 20 time periods automatically. Shows the top {{ top_n }} names by total mentions across the whole range; each bar is split into that period's mentions per name, and the heatmap below breaks the same data out by name and period. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
 
         {% include "_range_nav.html" %}
 

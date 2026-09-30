@@ -37,3 +37,12 @@ class NameChart(JournalBaseChart):
 
 class NameTimelineChart(JournalBaseChart):
 	type = ChartType.Bar
+
+	class options:
+		# Each bar is a stack of one segment per name, so the legend distinguishes
+		# names and both axes need "stacked" set for Chart.js to stack instead of
+		# grouping the segments side by side.
+		legend = Options.Legend(display=True)
+		_xAxes = [Options.General(stacked=True)]
+		_yAxes = [Options.General(stacked=True)]
+		scales = Options.General(xAxes=_xAxes, yAxes=_yAxes)

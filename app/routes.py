@@ -349,12 +349,13 @@ def names_comparison():
 		top_n = DEFAULT_TOP_N
 
 	buckets = _consolidate_into_buckets(start_of_range, end_of_range, MAX_COMPARISON_BUCKETS)
+	bucket_labels = [_bucket_label(bucket_start, bucket_end) for bucket_start, bucket_end in buckets]
 
-	bucket_labels = []
-	bucket_top_n_totals = []  # y-axis: sum of that bucket's top-N names' mentions
-	bucket_name_totals = []   # every name's total in that bucket, for the heatmap
-	names_in_any_top_n = set()
-
+	# Every name's total in each bucket - not just the top-N - so we can rank by
+	# total mentions across the *whole* range afterward instead of per bucket. Ranking
+	# per bucket would drop a name that's consistently just outside any single
+	# period's top N even though their overall total is high.
+	bucket_name_totals = []
 	for bucket_start, bucket_end in buckets:
 		entries = models.JournalEntry.query.filter(
 			and_(models.JournalEntry.entry_date >= bucket_start, models.JournalEntry.entry_date <= bucket_end))
@@ -365,27 +366,34 @@ def names_comparison():
 			for name, counts in data_points.items()
 			if name.lower() not in excluded_names
 		}
-
-		top_names_this_bucket = sorted(name_totals, key=lambda name: name_totals[name], reverse=True)[:top_n]
-
-		bucket_labels.append(_bucket_label(bucket_start, bucket_end))
-		bucket_top_n_totals.append(sum(name_totals[name] for name in top_names_this_bucket))
 		bucket_name_totals.append(name_totals)
-		names_in_any_top_n.update(top_names_this_bucket)
 
+	overall_totals = {}
+	for name_totals in bucket_name_totals:
+		for name, count in name_totals.items():
+			overall_totals[name] = overall_totals.get(name, 0) + count
+
+	top_names = sorted(overall_totals, key=lambda name: overall_totals[name], reverse=True)[:top_n]
+
+	# Stacked bar chart: one series per name, so each bar is split into the
+	# contribution of each of the top names for that time period.
 	chart = charts.NameTimelineChart()
 	chart.labels.labels = bucket_labels
-	chart.data.data = bucket_top_n_totals
+	chart.data = type('NamesTimelineChartData', (), {})
+	for index, name in enumerate(top_names):
+		color = NAME_CHART_COLORS[index % len(NAME_CHART_COLORS)]
+		series = type(name, (), {
+			'label': name,
+			'data': [totals.get(name, 0) for totals in bucket_name_totals],
+			'borderColor': color,
+			'backgroundColor': color,
+		})
+		setattr(chart.data, name, series)
 	chartJSON = chart.get()
 
-	# Heatmap covers every name that made the top-N cut in at least one bucket,
-	# sorted by their total mentions across the whole range.
-	heatmap_names = sorted(
-		names_in_any_top_n,
-		key=lambda name: sum(totals.get(name, 0) for totals in bucket_name_totals),
-		reverse=True)
+	# Heatmap: same names, already sorted by total mentions across the whole range.
 	heatmap_max = max(
-		(totals.get(name, 0) for totals in bucket_name_totals for name in heatmap_names),
+		(totals.get(name, 0) for totals in bucket_name_totals for name in top_names),
 		default=0)
 	heatmap_rows = [
 		{
@@ -398,7 +406,7 @@ def names_comparison():
 				for totals in bucket_name_totals
 			],
 		}
-		for name in heatmap_names
+		for name in top_names
 	]
 
 	template_args = {
