@@ -34,6 +34,15 @@ class JournalEntry(db.Model):
     def sentiment_polarity_formatted(self):
         return round(self.sentiment().polarity, 3)
 
+    def sentiment_polarity_class(self):
+        polarity = self.sentiment().polarity
+        if polarity > 0.1:
+            return 'sentiment-positive'
+        elif polarity < -0.1:
+            return 'sentiment-negative'
+        else:
+            return 'sentiment-neutral'
+
     @staticmethod
     def stop_words():
         stop_words = stopwords.words('english')
