@@ -28,7 +28,7 @@ class DateRangeParser():
 				return datetime(year=start_year, month=start_month, day=1)
 			elif self.style == RequestLengthStyle.DEFAULT_ALL:
 				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-				return first_entry.entry_date
+				return first_entry.entry_date if first_entry else datetime.now()
 
 	def end_of_range(self):
 		if self.end_year and self.end_month:
@@ -41,7 +41,7 @@ class DateRangeParser():
 				return datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
 			elif self.style == RequestLengthStyle.DEFAULT_ALL:
 				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
-				return first_entry.entry_date
+				return first_entry.entry_date if first_entry else datetime.now()
 
 	def template_args(self):
 		template_args = {}
@@ -52,6 +52,9 @@ class DateRangeParser():
 
 	def _calculate_years_for_selector(self):
 	    first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+	    if first_entry is None:
+	        return []
+
 	    years = []
 	    for year in range(first_entry.entry_date.year, datetime.now().year+1):
 	        years.append(year)

@@ -6,6 +6,7 @@ import nltk
 import random
 
 from flask import render_template, flash, redirect, url_for, request
+from pychartjs import Color
 from app import app, db, models, charts
 from datetime import datetime
 from dateutil.relativedelta import *
@@ -22,6 +23,14 @@ from app.parsers import DateRangeParser, RequestLengthStyle
 
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))   # refers to application_top
 APP_STATIC = os.path.join(APP_ROOT, 'static')
+
+# Cap how many name lines get drawn on /names - past this the chart stops being readable
+MAX_NAME_SERIES = 15
+NAME_CHART_COLORS = [
+	Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple,
+	Color.Teal, Color.Maroon, Color.Olive, Color.Navy, Color.Brown,
+	Color.Magenta, Color.Cyan, Color.Lime, Color.Pink, Color.Gray,
+]
 
 operation_threads = {}
 
@@ -78,14 +87,15 @@ def day_in_history():
 	month = int(request.args.get('month', '0')) or now.month
 	day = int(request.args.get('day', '0')) or now.day
 
-	first_year = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first().entry_date.year
+	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
 	valid_dates = []
-	for year in range(first_year, datetime.now().year+1):
-		valid_dates.append(datetime(year=year, month=month, day=day))
+	if first_entry is not None:
+		for year in range(first_entry.entry_date.year, datetime.now().year+1):
+			valid_dates.append(datetime(year=year, month=month, day=day))
 
 	entries = models.JournalEntry.query.filter(models.JournalEntry.entry_date.in_(valid_dates))
 	years = _calculate_years_for_selector()
-	selected_date = SelectedDate(year=year, month=month, day=day)
+	selected_date = SelectedDate(year=now.year, month=month, day=day)
 
 	return render_template('day_in_history.html', entries=entries, years=years, selected_date=selected_date)
 
@@ -263,9 +273,33 @@ def names_over_time():
 			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date)
 
 	data_points = NamesPresenter(entries).bucket_info(DateStyle.DAY)
+
+	top_names = sorted(
+		data_points.keys(),
+		key=lambda name: sum(data_points[name].values()),
+		reverse=True)[:MAX_NAME_SERIES]
+
+	labels = sorted(
+		{key for name in top_names for key in data_points[name].keys()},
+		key=lambda label: datetime.strptime(label, DateStyle.DAY.value))
+
 	chart = charts.NameChart()
-	# chart.labels.labels = labels
-	chart.data.data = data_points.values()
+	chart.labels.labels = labels
+	# Build a fresh data class per request instead of mutating the shared
+	# JournalBaseChart.data class, which every chart type inherits from.
+	chart.data = type('NamesChartData', (), {})
+	for index, name in enumerate(top_names):
+		buckets = data_points[name]
+		color = NAME_CHART_COLORS[index % len(NAME_CHART_COLORS)]
+		series = type(name, (), {
+			'label': name,
+			'data': [buckets.get(label, 0) for label in labels],
+			'borderColor': color,
+			'backgroundColor': color,
+			'fill': False,
+		})
+		setattr(chart.data, name, series)
+
 	chartJSON = chart.get()
 	template_args = {
 		'chartJSON': chartJSON,
@@ -321,6 +355,9 @@ def entries_status():
 
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+	if first_entry is None:
+		return []
+
 	years = []
 	for year in range(first_entry.entry_date.year, datetime.now().year+1):
 		years.append(year)

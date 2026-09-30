@@ -26,3 +26,8 @@ class SentimentByMonthChart(JournalBaseChart):
 
 class NameChart(JournalBaseChart):
 	type = ChartType.Line
+
+	class options:
+		# Unlike the other charts, this one draws multiple differently-colored
+		# lines (one per name), so the legend is needed to tell them apart.
+		legend = Options.Legend(display=True)

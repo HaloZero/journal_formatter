@@ -1,7 +1,13 @@
 from datetime import date
 
 from tests.factories import make_journal_entry, make_journal_photo
-from app.presenters import DateStyle, NamesPresenter, LocationTimelinePresenter
+from app.parsers import DateRangeParser, RequestLengthStyle
+from app.presenters import DateStyle, NamesPresenter, LocationTimelinePresenter, SentimentBucketPresenter
+
+
+class MockRequest:
+	def __init__(self, args=None):
+		self.args = args or {}
 
 
 def test_names_presenter_buckets_by_day():
@@ -49,6 +55,26 @@ def test_journal_entry_photos_relationship():
 
 	assert len(entry.photos) == 2
 	assert {p.file_path for p in entry.photos} == {"photos/2020/a.jpg", "photos/2020/b.jpg"}
+
+
+def test_date_range_parser_default_all_with_no_entries():
+	parser = DateRangeParser(MockRequest(), RequestLengthStyle.DEFAULT_ALL)
+
+	assert parser.start_of_range() is not None
+	assert parser.end_of_range() is not None
+	assert parser.template_args()['years'] == []
+
+
+def test_sentiment_bucket_presenter_with_no_entries():
+	assert SentimentBucketPresenter([]).bucket_info() == {}
+
+
+def test_sentiment_bucket_presenter_trims_to_populated_buckets():
+	entry = make_journal_entry(entry_text="This is wonderful and amazing!")
+
+	buckets = SentimentBucketPresenter([entry]).bucket_info()
+
+	assert sum(buckets.values()) == 1
 
 
 def _all_entries():

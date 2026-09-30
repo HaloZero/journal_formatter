@@ -50,6 +50,8 @@ Effectively you'll need to build your own parser and just make each record confo
 
 ## Starting the app
 
+`make help` lists shortcuts for everything below (`make setup` does steps 1–3 in one go; `make run`, `make migrate`, `make test`, etc. wrap the rest).
+
 1) Create and activate a virtualenv, then install dependencies:
    ```
    python3 -m venv venv

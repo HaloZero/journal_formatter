@@ -41,13 +41,13 @@ class SentimentBucketPresenter():
 
 		# clear all leading and trailing keys
 		for key in keys:
-			if buckets[key] == 0:
+			if buckets.get(key) == 0:
 				del buckets[key]
 			else:
 				break
 
 		for key in reversed(keys):
-			if buckets[key] == 0:
+			if buckets.get(key) == 0:
 				del buckets[key]
 			else:
 				break
