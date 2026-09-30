@@ -15,7 +15,7 @@
 			{% include "_date_select_nav.html" %}
 		</form>
 
-		<form action="search" method="get">
+		<form action="{{ url_for('search') }}" method="get">
 			<h2>Search:</h2>
 			<input type="text" name="query" value=''></input>
 		</form>

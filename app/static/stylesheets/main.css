@@ -289,3 +289,71 @@ pre .positive_2 {
 	width: 100%;
 	overflow-x: auto;
 }
+
+/* Name/place tags on an entry */
+.tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.tags-label {
+	font-weight: bold;
+	margin-right: 2px;
+}
+
+.tag {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 12px;
+	text-decoration: none;
+	font-size: 0.9em;
+	color: white;
+}
+
+.tag:hover {
+	text-decoration: underline;
+}
+
+.tag-name {
+	background-color: #649cc7;
+}
+
+.tag-place {
+	background-color: #a41100;
+}
+
+.tag-count {
+	opacity: 0.85;
+	font-size: 0.9em;
+}
+
+.tag-empty {
+	color: #999999;
+	font-style: italic;
+}
+
+/* Search page */
+.search-form {
+	max-width: 800px;
+	margin: 0 auto 20px;
+	text-align: left;
+}
+
+.search-fields {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 15px;
+}
+
+.search-field {
+	display: flex;
+	flex-direction: column;
+}
+
+.search-field label {
+	font-size: 0.85em;
+	margin-bottom: 4px;
+}

@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import datetime
 from nltk.tokenize import word_tokenize
 from textblob import TextBlob
@@ -33,6 +34,25 @@ class JournalEntry(db.Model):
 
     def sentiment_polarity_formatted(self):
         return round(self.sentiment().polarity, 3)
+
+    def unique_names(self):
+        return self._value_counts(self.names)
+
+    def unique_locations(self):
+        return self._value_counts(self.locations)
+
+    @staticmethod
+    def _value_counts(values):
+        if not values:
+            return []
+        counts = Counter(values)
+        seen = set()
+        ordered = []
+        for value in values:
+            if value not in seen:
+                seen.add(value)
+                ordered.append((value, counts[value]))
+        return ordered
 
     @staticmethod
     def stop_words():

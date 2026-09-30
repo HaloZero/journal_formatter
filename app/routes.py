@@ -335,6 +335,41 @@ def places_timeline():
 
 	return render_template('places.html', **template_args)
 
+@app.route('/search')
+def search():
+	name = request.args.get('name', '').strip()
+	place = request.args.get('place', '').strip()
+	query = request.args.get('query', '').strip()
+
+	filters = []
+	if name:
+		filters.append(models.JournalEntry.names.any(name))
+	if place:
+		filters.append(models.JournalEntry.locations.any(place))
+	if query:
+		filters.append(models.JournalEntry.entry_text.ilike('%{}%'.format(query)))
+
+	entries = []
+	if filters:
+		entries = models.JournalEntry.query.filter(and_(*filters)) \
+			.order_by(models.JournalEntry.entry_date.desc()).all()
+
+	template_args = {
+		'entries': entries,
+		'has_search': bool(filters),
+		'name': name,
+		'place': place,
+		'query': query,
+		'all_names': _distinct_array_values(models.JournalEntry.names),
+		'all_places': _distinct_array_values(models.JournalEntry.locations),
+	}
+
+	return render_template('search.html', **template_args)
+
+def _distinct_array_values(column):
+	rows = db.session.query(func.unnest(column).label('value')).distinct().all()
+	return sorted({row.value for row in rows if row.value}, key=str.lower)
+
 @app.route('/status')
 def entries_status():
 	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)

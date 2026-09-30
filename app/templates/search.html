@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+	<form class="search-form" method="get" action="{{ url_for('search') }}">
+		<div>
+			<span><h2>Search</h2></span>
+		</div>
+
+		<div class="search-fields">
+			<div class="search-field">
+				<label for="query">Text</label>
+				<input type="text" id="query" name="query" value="{{ query }}" placeholder="Search entry text">
+			</div>
+
+			<div class="search-field">
+				<label for="name">Name</label>
+				<select id="name" name="name">
+					<option value="">Any name</option>
+					{% for candidate in all_names %}
+					<option value="{{ candidate }}" {{ 'selected' if candidate == name }}>{{ candidate }}</option>
+					{% endfor %}
+				</select>
+			</div>
+
+			<div class="search-field">
+				<label for="place">Place</label>
+				<select id="place" name="place">
+					<option value="">Any place</option>
+					{% for candidate in all_places %}
+					<option value="{{ candidate }}" {{ 'selected' if candidate == place }}>{{ candidate }}</option>
+					{% endfor %}
+				</select>
+			</div>
+
+			<button id="submit" type="submit">Search</button>
+		</div>
+	</form>
+
+	{% if has_search %}
+		{% if entries %}
+			{% for entry in entries %}
+				{% include "_entry.html" %}
+			{% endfor %}
+		{% else %}
+			<div class="empty-state">
+				<h2>No entries found</h2>
+				<p>No journal entries matched your search. Try a different name, place, or text.</p>
+			</div>
+		{% endif %}
+	{% else %}
+		<div class="empty-state">
+			<h2>Search your journal</h2>
+			<p>Search by text, or pick a name or place to see every entry that mentions them.</p>
+		</div>
+	{% endif %}
+</div>
+</body>
+</html>
