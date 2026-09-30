@@ -1,12 +1,12 @@
-/* status.html only */
+/* status.html only - namespaced under #page-status (see app/templates/status.html) */
 
-.status-summary {
+#page-status .status-summary {
 	font-size: 1.2em;
 	font-weight: bold;
 }
 
-.date-filter,
-.selection-bar {
+#page-status .date-filter,
+#page-status .selection-bar {
 	max-width: 1000px;
 	margin: 0 auto 15px;
 	display: flex;

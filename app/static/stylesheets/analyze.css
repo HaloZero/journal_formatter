@@ -1,6 +1,6 @@
-/* analyze.html only */
+/* analyze.html only - namespaced under #page-analyze (see app/templates/analyze.html) */
 
-.thread progress {
+#page-analyze .thread progress {
 	height: 5em;
 	width: 20em;
 	max-width: 100%;

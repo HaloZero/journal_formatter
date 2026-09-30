@@ -1,14 +1,14 @@
-/* classify.html only */
+/* classify.html only - namespaced under #page-classify (see app/templates/classify.html) */
 
-.sentence button {
+#page-classify .sentence button {
 	margin-right: 15px;
 }
 
-.sentence.classified pre {
+#page-classify .sentence.classified pre {
 	text-decoration: line-through;
 }
 
-.sentence.classified button {
+#page-classify .sentence.classified button {
 	border: 1px solid #999999;
 	background-color: #cccccc;
 	color: #666666;
