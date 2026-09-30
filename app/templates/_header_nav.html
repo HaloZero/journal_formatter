@@ -1,14 +1,22 @@
 <header>
-    <h1>Journal Analyzer</h1>
-    <span>
+    <div class="header-bar">
+        <h1>Journal Analyzer</h1>
+        <button type="button" class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">&#9776;</button>
+    </div>
+    <nav class="main-nav">
         <a href="/">Home</a>
         <a href="/day_in_history">Day in History</a>
-        <a href="/words">Unique Words</a>
-        <a href="/ngrams">N-Grams</a>
-        <a href="/sentiment">Sentiment</a>
-        <a href="/monthly_sentiment">Sentiment (By Month)</a>
-        <a href="/distribution_sentiment">Distribution of sentiment</a>
-        <a href="/places">Places</a>
+        <div class="nav-group">
+            <button type="button" class="nav-group-toggle" aria-expanded="false">Charts</button>
+            <div class="nav-group-menu">
+                <a href="/words">Unique Words</a>
+                <a href="/ngrams">N-Grams</a>
+                <a href="/sentiment">Sentiment</a>
+                <a href="/monthly_sentiment">Sentiment (By Month)</a>
+                <a href="/distribution_sentiment">Distribution of Sentiment</a>
+                <a href="/places">Places</a>
+            </div>
+        </div>
         <a href="/status">Status</a>
-    </span>
+    </nav>
 </header>

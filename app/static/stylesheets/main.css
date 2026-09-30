@@ -7,9 +7,15 @@ body {
 /* header */
 
 header {
-	height: 55px;
 	background-color: #649cc7;
 	color: white;
+}
+
+.header-bar {
+	height: 55px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 
 header h1 {
@@ -22,11 +28,129 @@ header h1 {
 	display: inline-block;
 }
 
-header a {
+.nav-toggle {
+	display: none;
+	background: none;
+	border: none;
+	color: white;
+	font-size: 1.6em;
+	margin-right: 15px;
+	cursor: pointer;
+}
+
+/* main nav */
+
+.main-nav {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	padding: 0 15px 10px;
+}
+
+.main-nav a {
 	padding-right: 10px;
 	font-size: 1.1em;
 	color: white;
 	text-decoration: none;
+}
+
+.main-nav a:hover {
+	text-decoration: underline;
+}
+
+.nav-group {
+	position: relative;
+}
+
+.nav-group-toggle {
+	background: none;
+	border: none;
+	color: white;
+	font-size: 1.1em;
+	padding: 0 10px 0 0;
+	margin: 0;
+	font-family: inherit;
+	cursor: pointer;
+}
+
+.nav-group-toggle::after {
+	content: " \25BE";
+}
+
+.nav-group-menu {
+	display: none;
+	flex-direction: column;
+}
+
+.nav-group.open .nav-group-menu {
+	display: flex;
+}
+
+/* Desktop: title and nav sit inline on one row, Charts opens as a
+   floating dropdown panel instead of an accordion */
+@media (min-width: 701px) {
+	header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0 15px;
+	}
+
+	.header-bar {
+		height: auto;
+	}
+
+	.main-nav {
+		padding: 0;
+	}
+
+	.nav-group-menu {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		background-color: #649cc7;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+		padding: 5px 10px;
+		z-index: 10;
+		min-width: 200px;
+	}
+
+	.nav-group-menu a {
+		padding: 5px 0;
+	}
+}
+
+/* Mobile: hamburger-collapsed, stacked nav */
+@media (max-width: 700px) {
+	.nav-toggle {
+		display: block;
+	}
+
+	.main-nav {
+		display: none;
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.main-nav.open {
+		display: flex;
+	}
+
+	.main-nav a {
+		padding: 8px 0;
+	}
+
+	.nav-group {
+		width: 100%;
+	}
+
+	.nav-group-menu {
+		padding-left: 15px;
+	}
+
+	.nav-group-menu a {
+		padding: 6px 0;
+	}
 }
 
 /* page css  */
@@ -38,7 +162,9 @@ header a {
 
 /* Entry css */
 .entry {
-	width: 800px;
+	max-width: 800px;
+	width: 100%;
+	box-sizing: border-box;
 	background-color: white;
 	margin: 0 auto;
 	text-align: left;
@@ -126,6 +252,7 @@ pre .positive_2 {
 .thread progress {
 	height: 5em;
 	width: 20em;
+	max-width: 100%;
 }
 
 /* Chart */
@@ -135,25 +262,9 @@ pre .positive_2 {
 	width: 65%;
 }
 
-/*nav links */
-
-nav ul {
+/* Wide tables (places, status) scroll horizontally instead of
+   overflowing the page on narrow screens */
+.table-container {
 	width: 100%;
-	margin: 0;
-	-webkit-padding-start: 0;
-}
-
-nav ul li {
-	display: inline-block;
-}
-
-nav ul li a {
-	text-decoration: none;
-	color: blue;
-	border-right: 1px solid black;
-	padding: 0 5px;
-}
-
-nav ul li:last-child a {
-	border-right: none;
+	overflow-x: auto;
 }
