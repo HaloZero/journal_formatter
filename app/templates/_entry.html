@@ -11,7 +11,13 @@
 	</div>
 	{% endif %}
 	<div class="scores">
-		<div>Sentiment Score: {{ entry.sentiment_polarity_formatted() }}</div>
+		<div>
+			Sentiment Score:
+			<span class="{{ entry.sentiment_polarity_class() }}">{{ entry.sentiment_polarity_formatted() }}</span>
+			<span class="info-icon" tabindex="0" aria-label="What is the sentiment score?">i
+				<span class="info-tooltip">Ranges from -1 (most negative) to +1 (most positive). Around 0 is neutral.</span>
+			</span>
+		</div>
 		<div>Daily Score: {{ entry.daily_score if entry.daily_score is not none else "—" }}</div>
 		<div>
 			<span>Actions:</span>

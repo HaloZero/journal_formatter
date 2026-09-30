@@ -35,6 +35,15 @@ class JournalEntry(db.Model):
     def sentiment_polarity_formatted(self):
         return round(self.sentiment().polarity, 3)
 
+    def sentiment_polarity_class(self):
+        polarity = self.sentiment().polarity
+        if polarity > 0.1:
+            return 'sentiment-positive'
+        elif polarity < -0.1:
+            return 'sentiment-negative'
+        else:
+            return 'sentiment-neutral'
+
     def unique_names(self):
         return self._value_counts(self.names)
 
