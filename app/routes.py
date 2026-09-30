@@ -10,7 +10,7 @@ from pychartjs import Color
 from app import app, db, models, charts
 from datetime import datetime
 from dateutil.relativedelta import *
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from sqlalchemy.sql.expression import func
 from textblob import TextBlob
 
@@ -26,6 +26,10 @@ logger_config = logging.getLogger('journal.config')
 
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
+
+# Selectable "show top N" options on /names_comparison
+NAME_SERIES_LIMIT_OPTIONS = [10, 25, 50]
+DEFAULT_NAME_SERIES_LIMIT = 25
 NAME_CHART_COLORS = [
 	Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple,
 	Color.Teal, Color.Maroon, Color.Olive, Color.Navy, Color.Brown,
@@ -46,12 +50,8 @@ def index():
 		return render_template('welcome.html')
 
 	now = datetime.now()
-	try:
-		start_of_month = datetime.strptime(request.args.get('month', ''), '%Y-%m')
-	except ValueError:
-		start_of_month = datetime(year=now.year, month=now.month, day=1)
-
-	end_of_month = start_of_month + relativedelta(months=+1) - relativedelta(days=+1)
+	start_of_month = _parse_month_param('month', datetime(year=now.year, month=now.month, day=1))
+	start_of_month, end_of_month = _month_bounds(start_of_month)
 
 	entries = models.JournalEntry.query.filter(
 		and_(models.JournalEntry.entry_date >= start_of_month,
@@ -329,6 +329,73 @@ def names_over_time():
 
 	return render_template('names.html', **template_args)
 
+@app.route('/names_comparison')
+def names_comparison():
+	now = datetime.now()
+	default_month_b = datetime(year=now.year, month=now.month, day=1)
+	default_month_a = default_month_b - relativedelta(months=1)
+
+	month_a = _parse_month_param('month_a', default_month_a)
+	month_b = _parse_month_param('month_b', default_month_b)
+
+	limit = int(request.args.get('limit', '0')) or DEFAULT_NAME_SERIES_LIMIT
+	if limit not in NAME_SERIES_LIMIT_OPTIONS:
+		limit = DEFAULT_NAME_SERIES_LIMIT
+
+	exclude_raw = request.args.get('exclude', '')
+	excluded_names = {name.strip().lower() for name in exclude_raw.split(',') if name.strip()}
+
+	start_a, end_a = _month_bounds(month_a)
+	start_b, end_b = _month_bounds(month_b)
+
+	entries = models.JournalEntry.query.filter(
+		or_(
+			and_(models.JournalEntry.entry_date >= start_a, models.JournalEntry.entry_date <= end_a),
+			and_(models.JournalEntry.entry_date >= start_b, models.JournalEntry.entry_date <= end_b),
+		))
+
+	data_points = NamesPresenter(entries).bucket_info(DateStyle.MONTH_YEAR)
+
+	key_a = month_a.strftime(DateStyle.MONTH_YEAR.value)
+	key_b = month_b.strftime(DateStyle.MONTH_YEAR.value)
+	label_a = '{} {}'.format(calendar.month_name[month_a.month], month_a.year)
+	label_b = '{} {}'.format(calendar.month_name[month_b.month], month_b.year)
+
+	candidate_names = [name for name in data_points if name.lower() not in excluded_names]
+	top_names = sorted(
+		candidate_names,
+		key=lambda name: data_points[name].get(key_a, 0) + data_points[name].get(key_b, 0),
+		reverse=True)[:limit]
+
+	chart = charts.NameChart()
+	chart.labels.labels = [label_a, label_b]
+	# Build a fresh data class per request instead of mutating the shared
+	# JournalBaseChart.data class, which every chart type inherits from.
+	chart.data = type('NamesComparisonChartData', (), {})
+	for index, name in enumerate(top_names):
+		buckets = data_points[name]
+		color = NAME_CHART_COLORS[index % len(NAME_CHART_COLORS)]
+		series = type(name, (), {
+			'label': name,
+			'data': [buckets.get(key_a, 0), buckets.get(key_b, 0)],
+			'borderColor': color,
+			'backgroundColor': color,
+			'fill': False,
+		})
+		setattr(chart.data, name, series)
+
+	chartJSON = chart.get()
+	template_args = {
+		'chartJSON': chartJSON,
+		'month_a_value': month_a.strftime('%Y-%m'),
+		'month_b_value': month_b.strftime('%Y-%m'),
+		'limit': limit,
+		'limit_options': NAME_SERIES_LIMIT_OPTIONS,
+		'exclude_raw': exclude_raw,
+	}
+
+	return render_template('names_comparison.html', **template_args)
+
 @app.route('/places')
 def places_timeline():
 	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
@@ -382,6 +449,15 @@ def search():
 	}
 
 	return render_template('search.html', **template_args)
+
+def _parse_month_param(param_name, default):
+	try:
+		return datetime.strptime(request.args.get(param_name, ''), '%Y-%m')
+	except ValueError:
+		return default
+
+def _month_bounds(month_start):
+	return month_start, month_start + relativedelta(months=+1) - relativedelta(days=+1)
 
 def _distinct_array_values(column):
 	rows = db.session.query(func.unnest(column).label('value')).distinct().all()

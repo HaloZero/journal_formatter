@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+    <form method="get" action="{{ url_for('names_comparison') }}">
+        <div>
+            <span><h2>Compare Names by Month</h2></span>
+        </div>
+
+        <p class="chart-explainer">Pick two months to compare how often each name was mentioned. Click a name in the chart's legend to hide or show its line.</p>
+
+        <div class="date-nav">
+            <span>Month A:</span>
+            <input type="month" name="month_a" value="{{ month_a_value }}">
+
+            <span>Month B:</span>
+            <input type="month" name="month_b" value="{{ month_b_value }}">
+
+            <span>Show top:</span>
+            <select name="limit">
+                {% for option in limit_options %}
+                <option value="{{ option }}" {{ 'selected' if limit == option }}>{{ option }}</option>
+                {% endfor %}
+            </select>
+
+            <span>Exclude:</span>
+            <input type="text" name="exclude" value="{{ exclude_raw }}" placeholder="e.g. Alex, Sarah">
+
+            <button id="submit">Go</button>
+        </div>
+    </form>
+
+    {% include "_chart.html" %}
+</div>
+</body>
+</html>

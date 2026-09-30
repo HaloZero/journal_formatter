@@ -13,6 +13,10 @@ All notable changes to this project are documented here, newest first. Dates are
 - `/status`: a "X of Y entries analyzed" summary above the table, per-row checkboxes with a live "N entries selected" count, a "Select Unanalyzed" helper, and a client-side date-range filter (no page reload) replacing the old start/end-month dropdowns. "Analyze Selected" now POSTs just the checked entry IDs to `/analyze`.
 - The analyzer now checks spaCy's place-tagged entities against a real gazetteer (`geonamescache`: countries, US states, cities with population 15,000+) before counting them as a location, so brand/business names spaCy mistags as places (e.g. "Alamofire", "Phat Philly") no longer show up as places. A new "Known Locations" list on `/config` (mirroring the existing Known Names list) lets you manually add smaller places the gazetteer doesn't know about. **Re-run `/analyze` on existing entries to clean up any already-recorded false-positive locations.**
 - Extracted names are now title-cased before being stored, so "Alex", "alex", and "ALEX" mentioned in different entries (or even the same one) all count as one person instead of three separate name tags. Known names with unusual capitalization (e.g. "McDonald") will come out title-cased too (`Mcdonald`) — a known limitation of simple title-casing. Re-run `/analyze` to normalize names on existing entries.
+- `/names_comparison` — pick two months and see how often each name was mentioned in each one, as a line per name (click a name in the legend to hide/show it). Options to exclude specific names and to cap the chart at the top 10/25/50 most-mentioned names.
+
+### Fixed
+- `/names`'s heading said "Sentiment" (a copy-paste leftover) instead of describing the page.
 
 ### Changed
 - `main.js`/`main.css` split: page-specific behavior and styles (`analyze`, `classify`, `status`) moved into their own files, loaded only by the templates that use them. Only what's shared by 2+ pages stays in `main.js`/`main.css`.
