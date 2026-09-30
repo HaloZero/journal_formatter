@@ -22,7 +22,7 @@ There's some sentiment analysis by default that uses the NLTK parser to analyze 
 
 ### Names & Places
 
-Entries are run through spaCy's named entity recognition (`en_core_web_lg`) to pull out people (`entry.names`) and places (`entry.locations`) mentioned in each entry — more accurate than the old NLTK POS-tag heuristic, and it catches multi-word places too.
+Entries are run through spaCy's named entity recognition (`en_core_web_trf`, a transformer model — more accurate than spaCy's non-transformer models, at the cost of a much heavier dependency and slower per-entry processing) to pull out people (`entry.names`) and places (`entry.locations`) mentioned in each entry — more accurate than the old NLTK POS-tag heuristic, and it catches multi-word places too.
 
 ### Places Timeline
 
@@ -57,7 +57,7 @@ Effectively you'll need to build your own parser and just make each record confo
    python3 -m venv venv
    source venv/bin/activate
    pip install -r requirements.txt
-   python -m spacy download en_core_web_lg
+   python -m spacy download en_core_web_trf
    ```
 2) Set up the project's own Postgres cluster (lives entirely under `data/`, separate from any system-wide Postgres):
    ```

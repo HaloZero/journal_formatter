@@ -37,7 +37,7 @@ venv:
 install: venv
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
-	$(PYTHON) -m spacy download en_core_web_lg
+	$(PYTHON) -m spacy download en_core_web_trf
 
 setup: install db-init db-start db-create migrate
 	@echo "Setup complete. Run 'make run' to start the server."
