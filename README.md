@@ -66,7 +66,7 @@ Effectively you'll need to build your own parser and just make each record confo
    ./bin/db.sh create
    ```
    `./bin/db.sh stop` shuts it down; `./bin/db.sh status` checks whether it's running. It listens on port 5433 by default (override with `PGPORT`), so it won't collide with a system Postgres on 5432. `DATABASE_URL` defaults to this cluster; set it yourself to point elsewhere instead.
-3) Run Migrations. `flask db upgrade`
+3) Run Migrations. `make migrate`
 4) Start the app server `make run`
 5) In a web browser go to `/import` and upload your export to start importing your records.
 6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries, or `/import_photos` to pull in photos from `data/photos/` (see below).
@@ -95,10 +95,5 @@ Tests live in `tests/`, separate from the `app/` package. With `./bin/db.sh star
 
 ## Things to do
 
-- Fixing `/names` so that it actually shows charts properly
 - Fixing background threading for `/analyze` and `/import`
-- Using parser for other date parsers
-- Expand models https://towardsdatascience.com/basic-binary-sentiment-analysis-using-nltk-c94ba17ae386
-- Improve how `use_internal_classifier` is used instead of modifying js file. Expand use to other sentiment graphs.
 - Prettier Graphs and colors.
-- Add tests for request parsers SQL requirements
