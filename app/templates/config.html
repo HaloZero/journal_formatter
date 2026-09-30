@@ -51,6 +51,48 @@
 		<p class="tag-empty">No known names yet.</p>
 		{% endif %}
 	</div>
+
+	<div class="empty-state">
+		<h2>Known Locations</h2>
+		<p>The analyzer only recognizes a place spaCy tags if it's a real country, US state, or city (population 15,000+) - this filters out things spaCy mistags as places, like brand or business names. Add a smaller place here (a neighborhood, a small town) that isn't in that database but you still want recognized. Re-run analysis on affected entries for a change to take effect.</p>
+
+		<form class="search-form" method="post" action="{{ url_for('config_add_location') }}">
+			<div class="search-fields">
+				<div class="search-field">
+					<label for="location">Location</label>
+					<input type="text" id="location" name="location" placeholder="e.g. Phat Philly" required>
+				</div>
+				<button type="submit">Add</button>
+			</div>
+		</form>
+
+		{% if known_locations %}
+		<div class="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Location</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for known_location in known_locations %}
+					<tr>
+						<td>{{ known_location.location }}</td>
+						<td class="text-center">
+							<form method="post" action="{{ url_for('config_delete_location', known_location_id=known_location.id) }}">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<p class="tag-empty">No known locations yet.</p>
+		{% endif %}
+	</div>
 </div>
 </body>
 </html>

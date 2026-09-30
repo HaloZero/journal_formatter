@@ -4,6 +4,7 @@ import string
 import threading
 
 from app import app, db
+from app.geography import is_real_location
 
 _nlp = spacy.load(app.config['SPACY_MODEL'])
 
@@ -17,11 +18,16 @@ class JournalEntryAnalyzer(threading.Thread):
 		self.percent_complete = 0
 		self.total_entries_to_analyze = len(self.entries)
 		self.known_names = self._load_known_names()
+		self.known_locations = self._load_known_locations()
 		super().__init__()
 
 	def _load_known_names(self):
 		from app.models import KnownName
 		return {known_name.name.lower() for known_name in KnownName.query.all()}
+
+	def _load_known_locations(self):
+		from app.models import KnownLocation
+		return {known_location.location.lower() for known_location in KnownLocation.query.all()}
 
 	def run(self):
 		for entry in self.entries:
@@ -64,16 +70,30 @@ class JournalEntryAnalyzer(threading.Thread):
 				names.append(ent.text)
 			elif ent.label_ in PERSON_LABELS:
 				names.append(ent.text)
-			elif ent.label_ in LOCATION_LABELS:
+			elif ent.label_ in LOCATION_LABELS and self._is_recognized_location(ent.text):
 				locations.append(ent.text)
 		names.extend(self._unrecognized_known_names(entry_text, matched_spans))
+		locations.extend(self._unrecognized_known_locations(entry_text, matched_spans))
 		return names, locations
+
+	def _is_recognized_location(self, text):
+		"""A location only counts if it's a real place (country/US state/city), or
+		one you've manually added as a Known Location - filters out spaCy mistagging
+		things like brand names ("Alamofire") or business names ("Phat Philly") as places."""
+		return text.lower() in self.known_locations or is_real_location(text)
 
 	def _unrecognized_known_names(self, entry_text, matched_spans):
 		"""Known names spaCy didn't tag as any entity at all still count as names."""
+		return self._unrecognized_known(entry_text, matched_spans, self.known_names)
+
+	def _unrecognized_known_locations(self, entry_text, matched_spans):
+		"""Known locations spaCy didn't tag as any entity at all still count as locations."""
+		return self._unrecognized_known(entry_text, matched_spans, self.known_locations)
+
+	def _unrecognized_known(self, entry_text, matched_spans, known_values):
 		found = []
-		for known_name in self.known_names:
-			pattern = r'\b' + re.escape(known_name) + r'\b'
+		for known_value in known_values:
+			pattern = r'\b' + re.escape(known_value) + r'\b'
 			for match in re.finditer(pattern, entry_text, re.IGNORECASE):
 				if not any(match.start() < end and match.end() > start for start, end in matched_spans):
 					found.append(match.group(0))

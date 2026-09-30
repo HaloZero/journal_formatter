@@ -8,6 +8,7 @@ All notable changes to this project are documented here, newest first. Dates are
 - `/search` — free-text search plus dropdowns to search by a specific known name or place. Backs the previously-dead "Search:" forms on the home and day-in-history pages.
 - Entries now render their names/places as deduped pill links (with a `(2)`-style count when mentioned more than once) instead of a raw Python list; clicking one searches for it.
 - `/status`: a "X of Y entries analyzed" summary above the table, per-row checkboxes with a live "N entries selected" count, a "Select Unanalyzed" helper, and a client-side date-range filter (no page reload) replacing the old start/end-month dropdowns. "Analyze Selected" now POSTs just the checked entry IDs to `/analyze`.
+- The analyzer now checks spaCy's place-tagged entities against a real gazetteer (`geonamescache`: countries, US states, cities with population 15,000+) before counting them as a location, so brand/business names spaCy mistags as places (e.g. "Alamofire", "Phat Philly") no longer show up as places. A new "Known Locations" list on `/config` (mirroring the existing Known Names list) lets you manually add smaller places the gazetteer doesn't know about. **Re-run `/analyze` on existing entries to clean up any already-recorded false-positive locations.**
 
 ### Changed
 - `main.js`/`main.css` split: page-specific behavior and styles (`analyze`, `classify`, `status`) moved into their own files, loaded only by the templates that use them. Only what's shared by 2+ pages stays in `main.js`/`main.css`.

@@ -487,7 +487,8 @@ def config():
 		return redirect(url_for('config'))
 
 	known_names = models.KnownName.query.order_by(models.KnownName.name).all()
-	return render_template('config.html', known_names=known_names)
+	known_locations = models.KnownLocation.query.order_by(models.KnownLocation.location).all()
+	return render_template('config.html', known_names=known_names, known_locations=known_locations)
 
 @app.route('/config/delete/<int:known_name_id>', methods=['POST'])
 def config_delete(known_name_id):
@@ -496,4 +497,23 @@ def config_delete(known_name_id):
 		db.session.delete(known_name)
 		db.session.commit()
 		logger_config.info("Removed known name '%s'", known_name.name)
+	return redirect(url_for('config'))
+
+@app.route('/config/locations', methods=['POST'])
+def config_add_location():
+	location = request.form.get('location', '').strip()
+	already_known = models.KnownLocation.query.filter(func.lower(models.KnownLocation.location) == location.lower()).first()
+	if location and not already_known:
+		db.session.add(models.KnownLocation(location=location))
+		db.session.commit()
+		logger_config.info("Added known location '%s'", location)
+	return redirect(url_for('config'))
+
+@app.route('/config/locations/delete/<int:known_location_id>', methods=['POST'])
+def config_delete_location(known_location_id):
+	known_location = models.KnownLocation.query.get(known_location_id)
+	if known_location is not None:
+		db.session.delete(known_location)
+		db.session.commit()
+		logger_config.info("Removed known location '%s'", known_location.location)
 	return redirect(url_for('config'))
