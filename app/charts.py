@@ -13,6 +13,9 @@ class WordChart(JournalBaseChart):
 class NGramChart(JournalBaseChart):
 	type = ChartType.HorizontalBar
 
+	class options:
+		legend = Options.Legend(display=False)
+
 class SentimentChart(JournalBaseChart):
 	type = ChartType.Line
 
