@@ -9,55 +9,50 @@ class RequestLengthStyle(Enum):
 	# Default range ALL entries
 	DEFAULT_ALL = 1
 
+def journal_date_bounds():
+	"""Earliest/latest dates a native date picker should allow, as ISO strings."""
+	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+	min_date = first_entry.entry_date.isoformat() if first_entry else None
+	max_date = datetime.now().date().isoformat()
+	return min_date, max_date
+
+def _parse_date(value):
+	if not value:
+		return None
+	try:
+		return datetime.strptime(value, '%Y-%m-%d')
+	except ValueError:
+		return None
+
 class DateRangeParser():
 	def __init__(self, request, style: RequestLengthStyle):
-		self.start_year = int(request.args.get('start_year', '0'))
-		self.start_month = int(request.args.get('start_month', '0'))
-		self.end_year = int(request.args.get('end_year', '0'))
-		self.end_month = int(request.args.get('end_month', '0'))
+		self.start_date = _parse_date(request.args.get('start_date'))
+		self.end_date = _parse_date(request.args.get('end_date'))
 		self.style = style
 
 	def start_of_range(self):
-		if self.start_year and self.start_month:
-			return datetime(year=self.start_year, month=self.start_month, day=1)
-		else:
-			if self.style == RequestLengthStyle.DEFAULT_YEAR:
-				now = datetime.now()
-				start_year = now.year-1
-				start_month = now.month
-				return datetime(year=start_year, month=start_month, day=1)
-			elif self.style == RequestLengthStyle.DEFAULT_ALL:
-				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-				return first_entry.entry_date if first_entry else datetime.now()
+		if self.start_date:
+			return self.start_date
+		if self.style == RequestLengthStyle.DEFAULT_YEAR:
+			return datetime.now() - relativedelta(years=1)
+		elif self.style == RequestLengthStyle.DEFAULT_ALL:
+			first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+			return datetime.combine(first_entry.entry_date, datetime.min.time()) if first_entry else datetime.now()
 
 	def end_of_range(self):
-		if self.end_year and self.end_month:
-			return datetime(year=self.end_year, month=self.end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
-		else:
-			if self.style == RequestLengthStyle.DEFAULT_YEAR:
-				now = datetime.now()
-				end_year = now.year
-				end_month = now.month
-				return datetime(year=end_year, month=end_month, day=1) + relativedelta(months=+1) - relativedelta(days=+1)
-			elif self.style == RequestLengthStyle.DEFAULT_ALL:
-				first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
-				return first_entry.entry_date if first_entry else datetime.now()
+		if self.end_date:
+			return self.end_date
+		if self.style == RequestLengthStyle.DEFAULT_YEAR:
+			return datetime.now()
+		elif self.style == RequestLengthStyle.DEFAULT_ALL:
+			last_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).first()
+			return datetime.combine(last_entry.entry_date, datetime.min.time()) if last_entry else datetime.now()
 
 	def template_args(self):
-		template_args = {}
-		template_args['start_of_range'] = self.start_of_range()
-		template_args['end_of_range'] = self.end_of_range()
-		template_args['years'] = self._calculate_years_for_selector()
-		return template_args
-
-	def _calculate_years_for_selector(self):
-	    first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-	    if first_entry is None:
-	        return []
-
-	    years = []
-	    for year in range(first_entry.entry_date.year, datetime.now().year+1):
-	        years.append(year)
-
-	    return years
-
+		min_date, max_date = journal_date_bounds()
+		return {
+			'start_of_range': self.start_of_range(),
+			'end_of_range': self.end_of_range(),
+			'min_date': min_date,
+			'max_date': max_date,
+		}

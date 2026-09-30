@@ -19,7 +19,7 @@ from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresent
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
-from app.parsers import DateRangeParser, RequestLengthStyle
+from app.parsers import DateRangeParser, RequestLengthStyle, journal_date_bounds
 
 logger = logging.getLogger('journal.import')
 
@@ -39,14 +39,17 @@ class SelectedDate:
 		self.month = month
 		self.day = day
 
+	def iso(self):
+		return '{:04d}-{:02d}-{:02d}'.format(self.year, self.month, self.day or 1)
+
 @app.route('/')
 def index():
 	if models.JournalEntry.query.first() is None:
 		return render_template('welcome.html')
 
 	now = datetime.now()
-	year = int(request.args.get('year', '0')) or now.year
-	month = int(request.args.get('month', '0')) or now.month
+	selected = _parse_date_arg(request.args.get('date')) or now
+	year, month = selected.year, selected.month
 
 	start_of_month = datetime(year=year, month=month, day=1)
 	end_of_month = start_of_month + relativedelta(months=+1) - relativedelta(days=+1)
@@ -55,10 +58,11 @@ def index():
 		and_(models.JournalEntry.entry_date >= start_of_month,
 			models.JournalEntry.entry_date <= end_of_month))
 
-	years = _calculate_years_for_selector()
+	min_date, max_date = journal_date_bounds()
 	selected_date = SelectedDate(year=year, month=month)
 
-	return render_template('index.html', entries=entries, years=years, selected_date=selected_date)
+	return render_template('index.html', entries=entries, selected_date=selected_date,
+		min_date=min_date, max_date=max_date)
 
 @app.route('/classify_sentences')
 def classify_sentences():
@@ -86,20 +90,23 @@ def classify_sentences_post():
 @app.route('/day_in_history')
 def day_in_history():
 	now = datetime.now()
-	month = int(request.args.get('month', '0')) or now.month
-	day = int(request.args.get('day', '0')) or now.day
+	selected = _parse_date_arg(request.args.get('date')) or now
+	month, day = selected.month, selected.day
 
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
 	valid_dates = []
 	if first_entry is not None:
-		for year in range(first_entry.entry_date.year, datetime.now().year+1):
-			valid_dates.append(datetime(year=year, month=month, day=day))
+		for year in range(first_entry.entry_date.year, now.year+1):
+			try:
+				valid_dates.append(datetime(year=year, month=month, day=day))
+			except ValueError:
+				continue  # e.g. Feb 29 in a non-leap year
 
 	entries = models.JournalEntry.query.filter(models.JournalEntry.entry_date.in_(valid_dates))
-	years = _calculate_years_for_selector()
 	selected_date = SelectedDate(year=now.year, month=month, day=day)
 
-	return render_template('day_in_history.html', entries=entries, years=years, selected_date=selected_date)
+	return render_template('day_in_history.html', entries=entries, selected_date=selected_date,
+		min_date='{:04d}-01-01'.format(now.year), max_date='{:04d}-12-31'.format(now.year))
 
 @app.route('/words')
 def words():
@@ -380,16 +387,13 @@ def entries_status():
 		total_count=len(entries),
 		analyzed_count=analyzed_count)
 
-def _calculate_years_for_selector():
-	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-	if first_entry is None:
-		return []
-
-	years = []
-	for year in range(first_entry.entry_date.year, datetime.now().year+1):
-		years.append(year)
-
-	return years
+def _parse_date_arg(value):
+	if not value:
+		return None
+	try:
+		return datetime.strptime(value, '%Y-%m-%d')
+	except ValueError:
+		return None
 
 @app.route('/import', methods=['GET', 'POST'])
 def import_entries():
