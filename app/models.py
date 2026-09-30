@@ -106,6 +106,22 @@ class ExcludedName(db.Model):
     def __repr__(self):
         return '<ExcludedName {}>'.format(self.name)
 
+class NameAlias(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    alias = db.Column(db.String, unique=True, nullable=False)
+    canonical_name = db.Column(db.String, nullable=False)
+
+    def __repr__(self):
+        return '<NameAlias {} -> {}>'.format(self.alias, self.canonical_name)
+
+class LocationAlias(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    alias = db.Column(db.String, unique=True, nullable=False)
+    canonical_location = db.Column(db.String, nullable=False)
+
+    def __repr__(self):
+        return '<LocationAlias {} -> {}>'.format(self.alias, self.canonical_location)
+
 class JournalPhoto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     journal_entry_id = db.Column(db.Integer, db.ForeignKey('journal_entry.id'), index=True, nullable=False)

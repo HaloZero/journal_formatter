@@ -135,6 +135,102 @@
 		<p class="tag-empty">No excluded names yet.</p>
 		{% endif %}
 	</div>
+
+	<div class="empty-state">
+		<h2>Name Aliases</h2>
+		<p>Map a variant to the name you want it counted as (e.g. "Bob" -> "Robert") so mentions of both are combined everywhere names are counted or charted. Re-run analysis on affected entries for a change to take effect.</p>
+
+		<form class="search-form" method="post" action="{{ url_for('config_add_name_alias') }}">
+			<div class="search-fields">
+				<div class="search-field">
+					<label for="alias">Alias</label>
+					<input type="text" id="alias" name="alias" placeholder="e.g. Bob" required>
+				</div>
+				<div class="search-field">
+					<label for="canonical_name">Canonical Name</label>
+					<input type="text" id="canonical_name" name="canonical_name" placeholder="e.g. Robert" required>
+				</div>
+				<button type="submit">Add</button>
+			</div>
+		</form>
+
+		{% if name_aliases %}
+		<div class="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Alias</th>
+						<th>Canonical Name</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for name_alias in name_aliases %}
+					<tr>
+						<td>{{ name_alias.alias }}</td>
+						<td>{{ name_alias.canonical_name }}</td>
+						<td class="text-center">
+							<form method="post" action="{{ url_for('config_delete_name_alias', name_alias_id=name_alias.id) }}">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<p class="tag-empty">No name aliases yet.</p>
+		{% endif %}
+	</div>
+
+	<div class="empty-state">
+		<h2>Location Aliases</h2>
+		<p>Map a variant to the location you want it counted as (e.g. "SF" -> "San Francisco") so mentions of both are combined everywhere places are counted or charted. Re-run analysis on affected entries for a change to take effect.</p>
+
+		<form class="search-form" method="post" action="{{ url_for('config_add_location_alias') }}">
+			<div class="search-fields">
+				<div class="search-field">
+					<label for="location_alias">Alias</label>
+					<input type="text" id="location_alias" name="alias" placeholder="e.g. SF" required>
+				</div>
+				<div class="search-field">
+					<label for="canonical_location">Canonical Location</label>
+					<input type="text" id="canonical_location" name="canonical_location" placeholder="e.g. San Francisco" required>
+				</div>
+				<button type="submit">Add</button>
+			</div>
+		</form>
+
+		{% if location_aliases %}
+		<div class="table-container">
+			<table>
+				<thead>
+					<tr>
+						<th>Alias</th>
+						<th>Canonical Location</th>
+						<th class="text-center">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for location_alias in location_aliases %}
+					<tr>
+						<td>{{ location_alias.alias }}</td>
+						<td>{{ location_alias.canonical_location }}</td>
+						<td class="text-center">
+							<form method="post" action="{{ url_for('config_delete_location_alias', location_alias_id=location_alias.id) }}">
+								<button type="submit">Remove</button>
+							</form>
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+		{% else %}
+		<p class="tag-empty">No location aliases yet.</p>
+		{% endif %}
+	</div>
 </div>
 </body>
 </html>

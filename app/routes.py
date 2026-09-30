@@ -630,8 +630,11 @@ def config():
 	known_names = models.KnownName.query.order_by(models.KnownName.name).all()
 	known_locations = models.KnownLocation.query.order_by(models.KnownLocation.location).all()
 	excluded_names = models.ExcludedName.query.order_by(models.ExcludedName.name).all()
+	name_aliases = models.NameAlias.query.order_by(models.NameAlias.alias).all()
+	location_aliases = models.LocationAlias.query.order_by(models.LocationAlias.alias).all()
 	return render_template('config.html',
-		known_names=known_names, known_locations=known_locations, excluded_names=excluded_names)
+		known_names=known_names, known_locations=known_locations, excluded_names=excluded_names,
+		name_aliases=name_aliases, location_aliases=location_aliases)
 
 @app.route('/config/delete/<int:known_name_id>', methods=['POST'])
 def config_delete(known_name_id):
@@ -678,4 +681,44 @@ def config_delete_excluded_name(excluded_name_id):
 		db.session.delete(excluded_name)
 		db.session.commit()
 		logger_config.info("Removed excluded name '%s'", excluded_name.name)
+	return redirect(url_for('config'))
+
+@app.route('/config/name_aliases', methods=['POST'])
+def config_add_name_alias():
+	alias = request.form.get('alias', '').strip()
+	canonical_name = request.form.get('canonical_name', '').strip()
+	already_exists = models.NameAlias.query.filter(func.lower(models.NameAlias.alias) == alias.lower()).first()
+	if alias and canonical_name and not already_exists:
+		db.session.add(models.NameAlias(alias=alias, canonical_name=canonical_name))
+		db.session.commit()
+		logger_config.info("Added name alias '%s' -> '%s'", alias, canonical_name)
+	return redirect(url_for('config'))
+
+@app.route('/config/name_aliases/delete/<int:name_alias_id>', methods=['POST'])
+def config_delete_name_alias(name_alias_id):
+	name_alias = models.NameAlias.query.get(name_alias_id)
+	if name_alias is not None:
+		db.session.delete(name_alias)
+		db.session.commit()
+		logger_config.info("Removed name alias '%s' -> '%s'", name_alias.alias, name_alias.canonical_name)
+	return redirect(url_for('config'))
+
+@app.route('/config/location_aliases', methods=['POST'])
+def config_add_location_alias():
+	alias = request.form.get('alias', '').strip()
+	canonical_location = request.form.get('canonical_location', '').strip()
+	already_exists = models.LocationAlias.query.filter(func.lower(models.LocationAlias.alias) == alias.lower()).first()
+	if alias and canonical_location and not already_exists:
+		db.session.add(models.LocationAlias(alias=alias, canonical_location=canonical_location))
+		db.session.commit()
+		logger_config.info("Added location alias '%s' -> '%s'", alias, canonical_location)
+	return redirect(url_for('config'))
+
+@app.route('/config/location_aliases/delete/<int:location_alias_id>', methods=['POST'])
+def config_delete_location_alias(location_alias_id):
+	location_alias = models.LocationAlias.query.get(location_alias_id)
+	if location_alias is not None:
+		db.session.delete(location_alias)
+		db.session.commit()
+		logger_config.info("Removed location alias '%s' -> '%s'", location_alias.alias, location_alias.canonical_location)
 	return redirect(url_for('config'))
