@@ -1,15 +1,33 @@
+import logging
 import re
 import spacy
 import string
 import threading
+import time
 
 from app import app, db
 from app.geography import is_real_location
 
-_nlp = spacy.load(app.config['SPACY_MODEL'])
+logger = logging.getLogger('journal.analyzer')
 
 PERSON_LABELS = {"PERSON"}
 LOCATION_LABELS = {"GPE", "LOC"}
+
+_nlp = None
+
+def _get_nlp():
+	"""Lazily load the spaCy model on first use rather than at import time -
+	en_core_web_trf takes several seconds to load, which would otherwise slow down
+	every app start, dev-server reload, and test run even when nothing analyzes
+	an entry."""
+	global _nlp
+	if _nlp is None:
+		model_name = app.config['SPACY_MODEL']
+		logger.info("Loading spaCy model '%s'...", model_name)
+		start = time.time()
+		_nlp = spacy.load(model_name)
+		logger.info("Loaded spaCy model '%s' in %.2fs", model_name, time.time() - start)
+	return _nlp
 
 class JournalEntryAnalyzer(threading.Thread):
 	def __init__(self, entries):
@@ -49,7 +67,7 @@ class JournalEntryAnalyzer(threading.Thread):
 		entry (JournalEntry): the entry to analyze
 		"""
 		entry_text = entry.entry_text
-		doc = _nlp(entry_text)
+		doc = _get_nlp()(entry_text)
 		names, locations = self._entities(doc, entry_text)
 		word_count = self._analyze_word_count(entry_text)
 		sentence_count = len(list(doc.sents))
