@@ -1,0 +1,7 @@
+/* analyze.html only */
+
+.thread progress {
+	height: 5em;
+	width: 20em;
+	max-width: 100%;
+}

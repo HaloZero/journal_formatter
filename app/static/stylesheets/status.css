@@ -1,0 +1,17 @@
+/* status.html only */
+
+.status-summary {
+	font-size: 1.2em;
+	font-weight: bold;
+}
+
+.date-filter,
+.selection-bar {
+	max-width: 1000px;
+	margin: 0 auto 15px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}

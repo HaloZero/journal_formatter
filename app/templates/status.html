@@ -2,22 +2,33 @@
 <html>
 {% include "_head.html" %}
 <body>
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='stylesheets/status.css') }}">
+<script src="{{ url_for('static', filename='javascript/status.js') }}"></script>
 
 {% include "_header_nav.html" %}
 
 <div class="content">
-    <form method="get" action={{ formAction }}>
-        <div>
-            <span><h2>Entry Status</h2></span>
-        </div>
+    <h2>Entry Status</h2>
 
-        {% include "_range_nav.html" %}
-    </form>
+    <p class="status-summary">{{ analyzed_count }} of {{ total_count }} entries analyzed</p>
 
-    <div class="scores" style="padding: 15px 0;">
-        <span>Actions:</span>
-        <a href="/analyze?only_unanalyzed=1"><button type="button">Analyze Unanalyzed Entries</button></a>
-        <a href="/analyze"><button type="button">Re-analyze All Entries</button></a>
+    <div class="date-filter">
+        <span>From:</span>
+        <input type="date" id="filter-start-date">
+        <span>To:</span>
+        <input type="date" id="filter-end-date">
+        <button type="button" id="clear-date-filter">Clear</button>
+    </div>
+
+    <div class="selection-bar">
+        <button type="button" id="select-unanalyzed">Select Unanalyzed</button>
+        <span id="selected-count">0 entries selected</span>
+
+        <form method="post" action="/analyze" id="analyze-selected-form">
+            <input type="hidden" name="entry_ids" id="entry-ids-field">
+            <button type="submit" id="analyze-selected-button" disabled>Analyze Selected</button>
+        </form>
+
         <a href="/import_photos"><button type="button">Scan for Photos</button></a>
     </div>
 
@@ -25,27 +36,29 @@
         <table>
             <thead>
                 <tr>
+                    <th><input type="checkbox" id="select-all"></th>
                     <th>Date</th>
                     <th>Analyzed</th>
-                    <th>Word Count</th>
-                    <th>Sentence Count</th>
-                    <th>Names</th>
-                    <th>Places</th>
-                    <th>Daily Score</th>
-                    <th>Photos</th>
+                    <th class="text-center">Word Count</th>
+                    <th class="text-center">Sentence Count</th>
+                    <th class="text-center">Names</th>
+                    <th class="text-center">Places</th>
+                    <th class="text-center">Daily Score</th>
+                    <th class="text-center">Photos</th>
                 </tr>
             </thead>
             <tbody>
                 {% for entry in entries %}
-                <tr>
+                <tr data-date="{{ entry.entry_date.isoformat() }}" data-analyzed="{{ 'true' if entry.word_count is not none else 'false' }}">
+                    <td><input type="checkbox" class="entry-select" value="{{ entry.id }}"></td>
                     <td>{{ entry.entry_date.strftime("%B %d, %Y") }}</td>
                     <td>{{ "Yes" if entry.word_count is not none else "No" }}</td>
-                    <td>{{ entry.word_count if entry.word_count is not none else "—" }}</td>
-                    <td>{{ entry.sentence_count if entry.sentence_count is not none else "—" }}</td>
-                    <td>{{ entry.names|length if entry.names else 0 }}</td>
-                    <td>{{ entry.locations|length if entry.locations else 0 }}</td>
-                    <td>{{ entry.daily_score if entry.daily_score is not none else "—" }}</td>
-                    <td>{{ entry.photos|length }}</td>
+                    <td class="text-center">{{ entry.word_count if entry.word_count is not none else "—" }}</td>
+                    <td class="text-center">{{ entry.sentence_count if entry.sentence_count is not none else "—" }}</td>
+                    <td class="text-center">{{ entry.names|length if entry.names else 0 }}</td>
+                    <td class="text-center">{{ entry.locations|length if entry.locations else 0 }}</td>
+                    <td class="text-center">{{ entry.daily_score if entry.daily_score is not none else "—" }}</td>
+                    <td class="text-center">{{ entry.photos|length }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

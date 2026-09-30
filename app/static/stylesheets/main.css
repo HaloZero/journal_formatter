@@ -252,30 +252,6 @@ pre .positive_2 {
 	font-weight: bold;
 }
 
-/*sentence */
-
-.sentence button {
-	margin-right: 15px;
-}
-
-.sentence.classified pre {
-	text-decoration: line-through;
-}
-
-.sentence.classified button {
-	border: 1px solid #999999;
-	background-color: #cccccc;
-	color: #666666;
-}
-
-/*Analysis and progress*/
-
-.thread progress {
-	height: 5em;
-	width: 20em;
-	max-width: 100%;
-}
-
 /* Chart */
 
 .chart-container {
@@ -286,8 +262,37 @@ pre .positive_2 {
 /* Wide tables (places, status) scroll horizontally instead of
    overflowing the page on narrow screens */
 .table-container {
+	max-width: 1000px;
 	width: 100%;
+	margin: 0 auto;
 	overflow-x: auto;
+}
+
+.table-container table {
+	width: 100%;
+	border-collapse: collapse;
+	background-color: white;
+}
+
+.table-container th,
+.table-container td {
+	padding: 8px 15px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+.table-container th {
+	background-color: #f5f3ef;
+	border-bottom: 2px solid #C9C9C9;
+}
+
+.table-container th.text-center,
+.table-container td.text-center {
+	text-align: center;
+}
+
+.table-container tbody tr:hover {
+	background-color: #f9f8f5;
 }
 
 /* Name/place tags on an entry */

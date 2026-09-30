@@ -372,23 +372,13 @@ def _distinct_array_values(column):
 
 @app.route('/status')
 def entries_status():
-	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_ALL)
+	entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).all()
+	analyzed_count = sum(1 for entry in entries if entry.word_count is not None)
 
-	start_of_range = parser.start_of_range()
-	end_of_range = parser.end_of_range()
-
-	entries = models.JournalEntry.query.filter(
-		and_(models.JournalEntry.entry_date >= start_of_range,
-			models.JournalEntry.entry_date <= end_of_range)).order_by(models.JournalEntry.entry_date.desc())
-
-	template_args = {
-		'entries': entries,
-		'formAction':'/status'
-	}
-
-	template_args.update(parser.template_args())
-
-	return render_template('status.html', **template_args)
+	return render_template('status.html',
+		entries=entries,
+		total_count=len(entries),
+		analyzed_count=analyzed_count)
 
 def _calculate_years_for_selector():
 	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
@@ -431,11 +421,16 @@ def import_entries():
 
 	return render_template('analyze.html', thread_id=thread_id)
 
-@app.route('/analyze')
+@app.route('/analyze', methods=['GET', 'POST'])
 def analyze_entries():
 	global operation_threads
 
-	if request.args.get('only_unanalyzed'):
+	entry_ids_param = request.form.get('entry_ids') if request.method == 'POST' else None
+
+	if entry_ids_param is not None:
+		entry_ids = [int(id) for id in entry_ids_param.split(',') if id]
+		entries = models.JournalEntry.query.filter(models.JournalEntry.id.in_(entry_ids)).all()
+	elif request.args.get('only_unanalyzed'):
 		entries = models.JournalEntry.query.filter(models.JournalEntry.word_count.is_(None)).all()
 	else:
 		entries = models.JournalEntry.query.all()
