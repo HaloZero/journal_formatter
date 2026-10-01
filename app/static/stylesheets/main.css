@@ -281,7 +281,7 @@ b.search {
 	text-align: center;
 	cursor: help;
 	margin-left: 4px;
-	vertical-align: middle;
+	vertical-align: -2px;
 }
 
 .info-icon .info-tooltip {
