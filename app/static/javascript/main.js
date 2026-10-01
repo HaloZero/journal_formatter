@@ -1,6 +1,7 @@
 $(function() {
 	setupNav()
 	setupAnalyze()
+	setupCarousels()
 });
 
 /// setup the hamburger toggle and the Charts dropdown/accordion in the nav
@@ -25,6 +26,16 @@ function setupNav() {
 			$group.removeClass('open')
 			$group.find('.nav-group-toggle').attr('aria-expanded', false)
 		}
+	})
+}
+
+/// wire up the prev/next arrows on the home page carousels (desktop/mouse users -
+/// touch devices swipe the carousel's horizontal scroll area directly)
+function setupCarousels() {
+	$('.carousel-arrow').on('click', function() {
+		var $carousel = $(this).closest('.carousel-wrapper').find('.carousel')
+		var direction = $(this).hasClass('carousel-prev') ? -1 : 1
+		$carousel[0].scrollBy({ left: direction * $carousel.width(), behavior: 'smooth' })
 	})
 }
 

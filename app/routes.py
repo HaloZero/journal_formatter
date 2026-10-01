@@ -79,12 +79,13 @@ def index():
 		return render_template('welcome.html')
 
 	now = datetime.now()
-	entries = _entries_on_this_day(now.month, now.day)
+	latest_entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).limit(10).all()
+	on_this_day_entries = _entries_on_this_day(now.month, now.day).all()
 
 	latest_entry_date = db.session.query(func.max(models.JournalEntry.entry_date)).scalar()
 	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))
 
-	return render_template('index.html', entries=entries,
+	return render_template('index.html', latest_entries=latest_entries, on_this_day_entries=on_this_day_entries,
 		latest_entry_date=latest_entry_date, stale_data=stale_data)
 
 @app.route('/classify_sentences')

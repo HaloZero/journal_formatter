@@ -13,17 +13,49 @@
 	{% endif %}
 
 	<nav>
-		<h2>On This Day</h2>
-
 		<form action="{{ url_for('search') }}" method="get">
 			<h2>Search:</h2>
 			<input type="text" name="query" value=''></input>
 		</form>
 	</nav>
 
-	{% for entry in entries %}
-		{% include "_entry.html" %}
-	{% endfor %}
+	<section class="carousel-section">
+		<h2>Latest Entries</h2>
+		{% if latest_entries %}
+		<div class="carousel-wrapper">
+			<button type="button" class="carousel-arrow carousel-prev" aria-label="Previous entry">&#8249;</button>
+			<div class="carousel">
+				{% for entry in latest_entries %}
+				<div class="carousel-item">
+					{% include "_entry.html" %}
+				</div>
+				{% endfor %}
+			</div>
+			<button type="button" class="carousel-arrow carousel-next" aria-label="Next entry">&#8250;</button>
+		</div>
+		{% else %}
+		<div class="empty-state">No entries yet.</div>
+		{% endif %}
+	</section>
+
+	<section class="carousel-section">
+		<h2>On This Day</h2>
+		{% if on_this_day_entries %}
+		<div class="carousel-wrapper">
+			<button type="button" class="carousel-arrow carousel-prev" aria-label="Previous entry">&#8249;</button>
+			<div class="carousel">
+				{% for entry in on_this_day_entries %}
+				<div class="carousel-item">
+					{% include "_entry.html" %}
+				</div>
+				{% endfor %}
+			</div>
+			<button type="button" class="carousel-arrow carousel-next" aria-label="Next entry">&#8250;</button>
+		</div>
+		{% else %}
+		<div class="empty-state">No entries on this day in previous years yet.</div>
+		{% endif %}
+	</section>
 </div>
 </body>
 </html>
