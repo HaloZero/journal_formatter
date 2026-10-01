@@ -53,25 +53,38 @@ class SelectedDate:
 		self.month = month
 		self.day = day
 
+def _parse_month_day_param(param_name, now):
+	try:
+		parsed_date = datetime.strptime(request.args.get(param_name, ''), '%Y-%m-%d')
+		return parsed_date.month, parsed_date.day
+	except ValueError:
+		return now.month, now.day
+
+def _entries_on_this_day(month, day):
+	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
+	valid_dates = []
+	if first_entry is not None:
+		for year in range(first_entry.entry_date.year, datetime.now().year+1):
+			try:
+				valid_dates.append(datetime(year=year, month=month, day=day))
+			except ValueError:
+				continue  # e.g. Feb 29 in a non-leap year
+
+	return models.JournalEntry.query.filter(
+		models.JournalEntry.entry_date.in_(valid_dates)).order_by(models.JournalEntry.entry_date.desc())
+
 @app.route('/')
 def index():
 	if models.JournalEntry.query.first() is None:
 		return render_template('welcome.html')
 
 	now = datetime.now()
-	start_of_month = _parse_month_param('month', datetime(year=now.year, month=now.month, day=1))
-	start_of_month, end_of_month = _month_bounds(start_of_month)
-
-	entries = models.JournalEntry.query.filter(
-		and_(models.JournalEntry.entry_date >= start_of_month,
-			models.JournalEntry.entry_date <= end_of_month))
-
-	selected_date = SelectedDate(year=start_of_month.year, month=start_of_month.month)
+	entries = _entries_on_this_day(now.month, now.day)
 
 	latest_entry_date = db.session.query(func.max(models.JournalEntry.entry_date)).scalar()
 	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))
 
-	return render_template('index.html', entries=entries, selected_date=selected_date,
+	return render_template('index.html', entries=entries,
 		latest_entry_date=latest_entry_date, stale_data=stale_data)
 
 @app.route('/classify_sentences')
@@ -100,23 +113,9 @@ def classify_sentences_post():
 @app.route('/day_in_history')
 def day_in_history():
 	now = datetime.now()
-	try:
-		parsed_date = datetime.strptime(request.args.get('date', ''), '%Y-%m-%d')
-		month, day = parsed_date.month, parsed_date.day
-	except ValueError:
-		month, day = now.month, now.day
+	month, day = _parse_month_day_param('date', now)
 
-	first_entry = models.JournalEntry.query.order_by(models.JournalEntry.entry_date).first()
-	valid_dates = []
-	if first_entry is not None:
-		for year in range(first_entry.entry_date.year, datetime.now().year+1):
-			try:
-				valid_dates.append(datetime(year=year, month=month, day=day))
-			except ValueError:
-				continue  # e.g. Feb 29 in a non-leap year
-
-	entries = models.JournalEntry.query.filter(
-		models.JournalEntry.entry_date.in_(valid_dates)).order_by(models.JournalEntry.entry_date.desc())
+	entries = _entries_on_this_day(month, day)
 	selected_date = SelectedDate(year=now.year, month=month, day=day)
 
 	return render_template('day_in_history.html', entries=entries, selected_date=selected_date)
@@ -549,15 +548,6 @@ def search():
 	}
 
 	return render_template('search.html', **template_args)
-
-def _parse_month_param(param_name, default):
-	try:
-		return datetime.strptime(request.args.get(param_name, ''), '%Y-%m')
-	except ValueError:
-		return default
-
-def _month_bounds(month_start):
-	return month_start, month_start + relativedelta(months=+1) - relativedelta(days=+1)
 
 def _load_excluded_names():
 	return {excluded_name.name.lower() for excluded_name in models.ExcludedName.query.all()}
