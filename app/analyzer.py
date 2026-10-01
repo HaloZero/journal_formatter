@@ -32,11 +32,11 @@ def _get_nlp():
 	return _nlp
 
 class JournalEntryAnalyzer(threading.Thread):
-	def __init__(self, entries):
-		self.entries = entries
+	def __init__(self, entry_ids):
+		self.entry_ids = entry_ids
 		self.entries_analyzed = 0
 		self.percent_complete = 0
-		self.total_entries_to_analyze = len(self.entries)
+		self.total_entries_to_analyze = len(entry_ids)
 		self.known_names = self._load_known_names()
 		self.known_locations = self._load_known_locations()
 		self.name_aliases = self._load_name_aliases()
@@ -61,9 +61,15 @@ class JournalEntryAnalyzer(threading.Thread):
 
 	def run(self):
 		with app.app_context():
+			from app.models import JournalEntry
+
 			start_time = time.time()
 			logger.info("Starting analysis of %d entries", self.total_entries_to_analyze)
-			for entry in self.entries:
+			# Re-query by ID here, inside this thread's own app context/session,
+			# rather than taking already-loaded entries from the caller's session -
+			# mutating and committing objects loaded by a different session is a silent no-op.
+			entries = JournalEntry.query.filter(JournalEntry.id.in_(self.entry_ids)).all() if self.entry_ids else []
+			for entry in entries:
 				self._analyze(entry)
 				self.entries_analyzed += 1
 				self.percent_complete = float(self.entries_analyzed) / float(self.total_entries_to_analyze)

@@ -20,6 +20,7 @@ from app.presenters import DateStyle, SentimentPresenter, SentimentBucketPresent
 from app.analyzer import JournalEntryAnalyzer
 from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
+from app.score_importer import ScoreImporter, parse_score_csv
 from app.parsers import DateRangeParser, RequestLengthStyle
 
 logger = logging.getLogger('journal.import')
@@ -576,22 +577,56 @@ def import_entries():
 
 	return render_template('analyze.html', thread_id=thread_id)
 
+@app.route('/import_scores', methods=['GET', 'POST'])
+def import_scores():
+	global operation_threads
+
+	if request.method == 'GET':
+		return render_template('import_scores.html')
+
+	uploaded_file = request.files.get('scores_file')
+	if not uploaded_file or not uploaded_file.filename:
+		logger.warning("Score import submitted with no file selected")
+		return render_template('analyze.html', error=(
+			"Choose a CSV file to import."
+		))
+
+	try:
+		rows = parse_score_csv(uploaded_file.stream)
+	except ValueError as error:
+		logger.error("Could not read uploaded score CSV %s: %s", uploaded_file.filename, error)
+		return render_template('analyze.html', error=(
+			"{} couldn't be read ({}). Check that it's a CSV of date,score rows."
+		).format(uploaded_file.filename, error))
+
+	thread_id = random.randint(0, 10000)
+	operation_threads[thread_id] = ScoreImporter(rows)
+	operation_threads[thread_id].start()
+	logger.info("Starting score import of %d rows from uploaded file %s", len(rows), uploaded_file.filename)
+
+	return render_template('analyze.html', thread_id=thread_id)
+
 @app.route('/analyze', methods=['GET', 'POST'])
 def analyze_entries():
 	global operation_threads
 
 	entry_ids_param = request.form.get('entry_ids') if request.method == 'POST' else None
 
+	# Pass IDs, not loaded JournalEntry objects: the analyzer runs in its own thread with
+	# its own app context/session, so objects loaded here in the request's session would
+	# be mutated and committed against a session that never loaded them - the commit
+	# would silently do nothing. The analyzer re-queries by ID inside its own thread/session.
 	if entry_ids_param is not None:
 		entry_ids = [int(id) for id in entry_ids_param.split(',') if id]
-		entries = models.JournalEntry.query.filter(models.JournalEntry.id.in_(entry_ids)).all()
 	elif request.args.get('only_unanalyzed'):
-		entries = models.JournalEntry.query.filter(models.JournalEntry.word_count.is_(None)).all()
+		entry_ids = [id for (id,) in models.JournalEntry.query
+			.filter(models.JournalEntry.word_count.is_(None))
+			.with_entities(models.JournalEntry.id).all()]
 	else:
-		entries = models.JournalEntry.query.all()
+		entry_ids = [id for (id,) in models.JournalEntry.query.with_entities(models.JournalEntry.id).all()]
 
 	thread_id = random.randint(0, 10000)
-	operation_threads[thread_id] = JournalEntryAnalyzer(entries)
+	operation_threads[thread_id] = JournalEntryAnalyzer(entry_ids)
 	operation_threads[thread_id].start()
 
 	return render_template('analyze.html', thread_id=thread_id)
