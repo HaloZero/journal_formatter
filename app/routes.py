@@ -32,7 +32,6 @@ logger_search = logging.getLogger('journal.search')
 # Rotates through the home page search box's placeholder - one example wasn't selling
 # what the search box can actually do, so there's a pool and a random one shows each load
 SEARCH_PLACEHOLDER_EXAMPLES = [
-	'when did I have a conversation with April about Kevin?',
 	'what was I doing in Tokyo?',
 	'when did Sam and I get in a fight?',
 	'what happened on my last birthday?',

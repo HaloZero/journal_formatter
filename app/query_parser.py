@@ -21,8 +21,8 @@ SYSTEM_PROMPT = (
 	"\"keywords\" is the remaining important topic words, as a short string, with the names "
 	"and places removed. If a key has nothing to report, use an empty list or empty string.\n\n"
 	"Example:\n"
-	"Question: when did I have a conversation with April about Kevin?\n"
-	"Answer: {\"names\": [\"April\", \"Kevin\"], \"places\": [], \"keywords\": \"conversation\"}"
+	"Question: when did I talk to Sam about Jordan?\n"
+	"Answer: {\"names\": [\"Sam\", \"Jordan\"], \"places\": [], \"keywords\": \"talk\"}"
 )
 
 logger = logging.getLogger('journal.query_parser')

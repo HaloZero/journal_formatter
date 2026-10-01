@@ -34,7 +34,7 @@ Drop image files (`.jpg`/`.jpeg`/`.png`/`.gif`) anywhere under `data/photos/` �
 
 ### Search
 
-The home page has a single search box that takes natural-language questions, e.g. "when did I have a conversation with April about Kevin?" It works as a hybrid of a local LLM and direct lookups against the names/places already extracted from your entries: the LLM (if you've downloaded it — see `make download-search-model` below) pulls out candidate names, places, and topic keywords from the question, and those candidates are then matched against your actual journal data before being used as filters, so the model can't fabricate a filter on a name/place that doesn't exist. If the model isn't downloaded, search still works — it falls back to matching known names/places directly against the question text.
+The home page has a single search box that takes natural-language questions, e.g. "what was I doing in Tokyo?" It works as a hybrid of a local LLM and direct lookups against the names/places already extracted from your entries: the LLM (if you've downloaded it — see `make download-search-model` below) pulls out candidate names, places, and topic keywords from the question, and those candidates are then matched against your actual journal data before being used as filters, so the model can't fabricate a filter on a name/place that doesn't exist. If the model isn't downloaded, search still works — it falls back to matching known names/places directly against the question text.
 
 Clicking a name or place tag on any entry still does an exact lookup, bypassing the LLM entirely.
 
