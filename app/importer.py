@@ -51,7 +51,11 @@ class DailyDiaryJournalEntry(JournalRecord):
 		self.json = json
 
 	def entryDate(self):
-		return datetime.strptime(self.json['d'], '%Y-%m-%dT%H:%M:%S')
+		# .date() matters here, not just style: entry_date is a Date column, and the
+		# dedup check in JournalImporter._import does filter_by(entry_date=entry_date) -
+		# a datetime with a non-midnight time never matches an existing Date row, so a
+		# re-import would silently defeat its own duplicate check and double every entry.
+		return datetime.strptime(self.json['d'], '%Y-%m-%dT%H:%M:%S').date()
 
 	def entryText(self):
 		return self.json['j']
