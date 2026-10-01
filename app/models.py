@@ -8,6 +8,16 @@ from app import db
 import string
 
 class JournalEntry(db.Model):
+    # daily_score is a 1-5 scale filled in by /import_scores - shown on each entry as
+    # a face instead of the raw number
+    DAILY_SCORE_FACES = {
+        1: ('\U0001F623', 'Worst day'),
+        2: ('\U0001F641', 'Bad day'),
+        3: ('\U0001F610', 'Average day'),
+        4: ('\U0001F642', 'Good day'),
+        5: ('\U0001F604', 'Best day'),
+    }
+
     id = db.Column(db.Integer, primary_key=True)
     entry_text = db.Column(db.String)
     timestamp = db.Column(db.Integer)
@@ -44,6 +54,10 @@ class JournalEntry(db.Model):
             return 'sentiment-negative'
         else:
             return 'sentiment-neutral'
+
+    def daily_score_face(self):
+        """(emoji, label) for this entry's 1-5 daily_score, or None if it hasn't been scored."""
+        return self.DAILY_SCORE_FACES.get(self.daily_score)
 
     def unique_names(self):
         return self._value_counts(self.names)

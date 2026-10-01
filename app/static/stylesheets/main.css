@@ -246,8 +246,9 @@ b.search {
 	padding-bottom: 10px;
 }
 
-.scores button {
-
+.daily-score-face {
+	font-size: 1.3em;
+	vertical-align: middle;
 }
 
 .sentiment-positive {

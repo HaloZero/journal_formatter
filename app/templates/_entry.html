@@ -18,7 +18,15 @@
 				<span class="info-tooltip">Ranges from -1 (most negative) to +1 (most positive). Around 0 is neutral.</span>
 			</span>
 		</div>
-		<div>Daily Score: {{ entry.daily_score if entry.daily_score is not none else "—" }}</div>
+		<div>
+			Daily Score:
+			{% set face = entry.daily_score_face() %}
+			{% if face %}
+				<span class="daily-score-face" role="img" aria-label="{{ face[1] }}" title="{{ face[1] }}">{{ face[0] }}</span>
+			{% else %}
+				—
+			{% endif %}
+		</div>
 		<div class="tags">
 			<span class="tags-label">Names:</span>
 			{% for entry_name, count in entry.unique_names() %}
