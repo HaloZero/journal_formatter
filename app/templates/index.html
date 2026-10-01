@@ -6,6 +6,12 @@
 {% include "_header_nav.html" %}
 
 <div class="content">
+	{% if stale_data %}
+		<div class="stale-data-warning">
+			Your latest journal entry is from {{ latest_entry_date.strftime('%B %-d, %Y') }} &mdash; your data may be out of date.
+		</div>
+	{% endif %}
+
 	<nav>
 		<form method="get" action="/">
 			<div>

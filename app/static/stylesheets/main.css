@@ -4,6 +4,16 @@ body {
 	background-color: #eeEbE6;
 }
 
+.stale-data-warning {
+	background-color: #fcebcd;
+	color: #7a5300;
+	border: 1px solid #f0c674;
+	border-radius: 4px;
+	padding: 10px 15px;
+	margin: 15px;
+	font-size: 0.95em;
+}
+
 /* header */
 
 header {

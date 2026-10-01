@@ -68,7 +68,11 @@ def index():
 
 	selected_date = SelectedDate(year=start_of_month.year, month=start_of_month.month)
 
-	return render_template('index.html', entries=entries, selected_date=selected_date)
+	latest_entry_date = db.session.query(func.max(models.JournalEntry.entry_date)).scalar()
+	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))
+
+	return render_template('index.html', entries=entries, selected_date=selected_date,
+		latest_entry_date=latest_entry_date, stale_data=stale_data)
 
 @app.route('/classify_sentences')
 def classify_sentences():
