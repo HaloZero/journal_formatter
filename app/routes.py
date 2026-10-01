@@ -5,6 +5,7 @@ import math
 import pdb
 import nltk
 import random
+import re
 
 from flask import render_template, flash, redirect, url_for, request, Response
 from pychartjs import Color
@@ -22,9 +23,11 @@ from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
 from app.score_importer import ScoreImporter, parse_score_csv
 from app.parsers import DateRangeParser, RequestLengthStyle
+from app import query_parser
 
 logger = logging.getLogger('journal.import')
 logger_config = logging.getLogger('journal.config')
+logger_search = logging.getLogger('journal.search')
 
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
@@ -78,6 +81,15 @@ def index():
 	if models.JournalEntry.query.first() is None:
 		return render_template('welcome.html')
 
+	name = request.args.get('name', '').strip()
+	place = request.args.get('place', '').strip()
+	query = request.args.get('query', '').strip()
+
+	if name or place or query:
+		entries, interpreted = _search_entries(name, place, query)
+		return render_template('index.html', search_mode=True, query=query,
+			entries=entries, interpreted=interpreted)
+
 	now = datetime.now()
 	latest_entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).limit(10).all()
 	on_this_day_entries = _entries_on_this_day(now.month, now.day).all()
@@ -85,8 +97,91 @@ def index():
 	latest_entry_date = db.session.query(func.max(models.JournalEntry.entry_date)).scalar()
 	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))
 
-	return render_template('index.html', latest_entries=latest_entries, on_this_day_entries=on_this_day_entries,
+	return render_template('index.html', search_mode=False, query='',
+		latest_entries=latest_entries, on_this_day_entries=on_this_day_entries,
 		latest_entry_date=latest_entry_date, stale_data=stale_data)
+
+def _search_entries(name, place, query_text):
+	"""Tag-click search (exact name=/place=, from the tags on an entry card) bypasses
+	the LLM entirely - it's a precise lookup. A freeform query_text from the search box
+	goes through the hybrid LLM/heuristic parser in _hybrid_search."""
+	if name or place:
+		filters = []
+		if name:
+			filters.append(models.JournalEntry.names.any(name))
+		if place:
+			filters.append(models.JournalEntry.locations.any(place))
+		entries = models.JournalEntry.query.filter(and_(*filters)) \
+			.order_by(models.JournalEntry.entry_date.desc()).all()
+		return entries, {
+			'used_llm': False,
+			'names': [name] if name else [],
+			'places': [place] if place else [],
+			'keywords': '',
+		}
+
+	return _hybrid_search(query_text)
+
+def _mentioned_values(text, known_values):
+	"""Case-insensitive, whole-word/phrase match of any known name/place against free text."""
+	lowered = text.lower()
+	return [value for value in known_values
+		if re.search(r'\b{}\b'.format(re.escape(value.lower())), lowered)]
+
+def _hybrid_search(query_text):
+	"""Parse a natural-language journal question into structured filters. The local LLM
+	(if downloaded - see query_parser.py) extracts candidate names/places and strips them
+	out of the topic keywords; those candidates, plus a direct heuristic pass over the raw
+	query text, are grounded against the names/places actually in the journal so we never
+	filter on something the model hallucinated. If the model isn't available, grounding
+	against the raw query text is the whole search - still useful for direct mentions like
+	"entries about Kevin"."""
+	# single-character "names" (I, A, K, ...) are near-universal NER noise in the
+	# extracted names column - matching them would make almost every query AND in a
+	# garbage filter and zero out real results, so they're excluded from matching here.
+	known_names = [n for n in _distinct_array_values(models.JournalEntry.names) if len(n) > 1]
+	known_places = [p for p in _distinct_array_values(models.JournalEntry.locations) if len(p) > 1]
+
+	parsed = query_parser.parse_query(query_text)
+	used_llm = parsed is not None
+
+	candidate_names = set(_mentioned_values(query_text, known_names))
+	candidate_places = set(_mentioned_values(query_text, known_places))
+	keywords = query_text
+
+	if used_llm:
+		candidate_names |= set(_mentioned_values(' '.join(parsed['names']), known_names))
+		candidate_places |= set(_mentioned_values(' '.join(parsed['places']), known_places))
+		if parsed['keywords']:
+			keywords = parsed['keywords']
+
+	filters = [models.JournalEntry.names.any(name) for name in candidate_names]
+	filters += [models.JournalEntry.locations.any(place) for place in candidate_places]
+
+	leftover_keywords = keywords.strip() if not (candidate_names or candidate_places) else ''
+	if leftover_keywords:
+		filters.append(models.JournalEntry.entry_text.ilike('%{}%'.format(leftover_keywords)))
+
+	entries = []
+	if filters:
+		entries = models.JournalEntry.query.filter(and_(*filters)) \
+			.order_by(models.JournalEntry.entry_date.desc()).all()
+
+	logger_search.info(
+		"Search %r -> llm=%s names=%s places=%s keywords=%r (%d results)",
+		query_text, used_llm, sorted(candidate_names), sorted(candidate_places), leftover_keywords, len(entries))
+
+	return entries, {
+		'used_llm': used_llm,
+		'names': sorted(candidate_names),
+		'places': sorted(candidate_places),
+		'keywords': leftover_keywords,
+	}
+
+@app.cli.command('download-search-model')
+def download_search_model_command():
+	"""Download the local LLM used to parse natural-language search queries on the home page."""
+	query_parser.download_model()
 
 @app.route('/classify_sentences')
 def classify_sentences():
@@ -521,34 +616,9 @@ def places_timeline():
 
 @app.route('/search')
 def search():
-	name = request.args.get('name', '').strip()
-	place = request.args.get('place', '').strip()
-	query = request.args.get('query', '').strip()
-
-	filters = []
-	if name:
-		filters.append(models.JournalEntry.names.any(name))
-	if place:
-		filters.append(models.JournalEntry.locations.any(place))
-	if query:
-		filters.append(models.JournalEntry.entry_text.ilike('%{}%'.format(query)))
-
-	entries = []
-	if filters:
-		entries = models.JournalEntry.query.filter(and_(*filters)) \
-			.order_by(models.JournalEntry.entry_date.desc()).all()
-
-	template_args = {
-		'entries': entries,
-		'has_search': bool(filters),
-		'name': name,
-		'place': place,
-		'query': query,
-		'all_names': _distinct_array_values(models.JournalEntry.names),
-		'all_places': _distinct_array_values(models.JournalEntry.locations),
-	}
-
-	return render_template('search.html', **template_args)
+	# the dedicated search page is gone - the home page has the search box now.
+	# kept as a redirect so old bookmarked/shared /search?name=... links still work.
+	return redirect(url_for('index', **request.args))
 
 def _load_excluded_names():
 	return {excluded_name.name.lower() for excluded_name in models.ExcludedName.query.all()}

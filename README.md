@@ -32,6 +32,12 @@ Entries are run through spaCy's named entity recognition (`en_core_web_trf`, a t
 
 Drop image files (`.jpg`/`.jpeg`/`.png`/`.gif`) anywhere under `data/photos/` — nested folders are fine. Visiting `/import_photos` scans that folder, figures out each photo's date (EXIF `DateTimeOriginal` first, then a `YYYY-MM-DD`-ish pattern in the filename), matches it to a journal entry with the same `entry_date`, and copies it into `app/static/photos/<year>/` with a `JournalPhoto` row linking it to that entry. Photos with no recognizable date, or no matching entry, are skipped and logged. Re-running the scan is safe — already-imported photos aren't duplicated.
 
+### Search
+
+The home page has a single search box that takes natural-language questions, e.g. "when did I have a conversation with April about Kevin?" It works as a hybrid of a local LLM and direct lookups against the names/places already extracted from your entries: the LLM (if you've downloaded it — see `make download-search-model` below) pulls out candidate names, places, and topic keywords from the question, and those candidates are then matched against your actual journal data before being used as filters, so the model can't fabricate a filter on a name/place that doesn't exist. If the model isn't downloaded, search still works — it falls back to matching known names/places directly against the question text.
+
+Clicking a name or place tag on any entry still does an exact lookup, bypassing the LLM entirely.
+
 ### Entry Status
 
 `/status` lists entries in a date range along with whether they've been analyzed (word/sentence counts, names, locations) and how many photos are attached, with buttons to analyze just the unanalyzed entries, re-analyze everything, or trigger a photo scan.
@@ -70,6 +76,7 @@ Effectively you'll need to build your own parser and just make each record confo
 4) Start the app server `make run`
 5) In a web browser go to `/import` and upload your export to start importing your records.
 6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries, or `/import_photos` to pull in photos from `data/photos/` (see below).
+7) Optional: run `make download-search-model` to download the local LLM used by the home page search box (see Search above). It's a one-time ~1GB download into `data/models/`, not part of `make install` since it's a bigger download than everyone necessarily wants up front; search still works without it, just with less flexible matching.
 
 You should be able to then see records on your localhost!
 
@@ -78,6 +85,7 @@ You should be able to then see records on your localhost!
 Everything local and personal lives under `data/` (gitignored, never committed):
 - `data/postgres/` — this project's own Postgres cluster
 - `data/photos/` — drop photos here for `/import_photos` to scan (see below)
+- `data/models/` — the local LLM used by the home page search box, if you've run `make download-search-model`
 
 ## Creating your own sentiment model
 

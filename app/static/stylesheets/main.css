@@ -471,6 +471,67 @@ pre .positive_2 {
 	font-style: italic;
 }
 
+/* Home page search box */
+.site-search {
+	max-width: 800px;
+	margin: 0 auto 20px;
+	display: flex;
+	gap: 8px;
+}
+
+.site-search input[type="text"] {
+	flex: 1;
+	box-sizing: border-box;
+	padding: 12px 16px;
+	font-size: 1.1em;
+	border: 1px solid #C9C9C9;
+	border-radius: 6px;
+}
+
+.site-search button {
+	padding: 0 20px;
+	font-size: 1.1em;
+	border: none;
+	border-radius: 6px;
+	background-color: #649cc7;
+	color: white;
+	cursor: pointer;
+}
+
+.site-search button:hover {
+	background-color: #4f82ab;
+}
+
+.search-results {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.search-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 15px;
+	text-align: left;
+}
+
+.search-engine {
+	margin-left: auto;
+	color: #999999;
+	font-size: 0.85em;
+	font-style: italic;
+}
+
+.clear-search {
+	color: #649cc7;
+	font-size: 0.9em;
+}
+
+.tag-keyword {
+	background-color: #666666;
+}
+
 /* Search page */
 .search-form {
 	max-width: 800px;

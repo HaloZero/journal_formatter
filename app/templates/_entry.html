@@ -26,7 +26,7 @@
 		<div class="tags">
 			<span class="tags-label">Names:</span>
 			{% for entry_name, count in entry.unique_names() %}
-			<a class="tag tag-name" href="{{ url_for('search', name=entry_name) }}">{{ entry_name }}{% if count > 1 %} <span class="tag-count">({{ count }})</span>{% endif %}</a>
+			<a class="tag tag-name" href="{{ url_for('index', name=entry_name) }}">{{ entry_name }}{% if count > 1 %} <span class="tag-count">({{ count }})</span>{% endif %}</a>
 			{% else %}
 			<span class="tag-empty">None</span>
 			{% endfor %}
@@ -34,7 +34,7 @@
 		<div class="tags">
 			<span class="tags-label">Places:</span>
 			{% for entry_place, count in entry.unique_locations() %}
-			<a class="tag tag-place" href="{{ url_for('search', place=entry_place) }}">{{ entry_place }}{% if count > 1 %} <span class="tag-count">({{ count }})</span>{% endif %}</a>
+			<a class="tag tag-place" href="{{ url_for('index', place=entry_place) }}">{{ entry_place }}{% if count > 1 %} <span class="tag-count">({{ count }})</span>{% endif %}</a>
 			{% else %}
 			<span class="tag-empty">None</span>
 			{% endfor %}
