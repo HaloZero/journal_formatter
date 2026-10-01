@@ -246,6 +246,12 @@ b.search {
 	padding-bottom: 10px;
 }
 
+.score-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
 .daily-score-face {
 	font-size: 1.3em;
 	vertical-align: middle;
@@ -281,7 +287,7 @@ b.search {
 	text-align: center;
 	cursor: help;
 	margin-left: 4px;
-	vertical-align: -2px;
+	vertical-align: middle;
 }
 
 .info-icon .info-tooltip {
