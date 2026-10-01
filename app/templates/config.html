@@ -11,6 +11,30 @@
 	</div>
 
 	<div class="empty-state">
+		<h2>Export / Import</h2>
+		<p>Export every Known Name, Known Location, Excluded Name, and alias on this page as a single JSON file, or import one back in. Importing only adds entries that don't already exist here - it never removes or overwrites anything.</p>
+
+		<div class="selection-bar">
+			<a href="{{ url_for('config_export') }}"><button type="button">Export Config</button></a>
+
+			<form method="post" action="{{ url_for('config_import') }}" enctype="multipart/form-data">
+				<input type="file" name="config_file" accept="application/json,.json" required>
+				<button type="submit">Import Config</button>
+			</form>
+		</div>
+
+		{% if import_summary %}
+		<p class="status-summary">
+			Imported {{ import_summary.known_names }} known name(s),
+			{{ import_summary.known_locations }} known location(s),
+			{{ import_summary.excluded_names }} excluded name(s),
+			{{ import_summary.name_aliases }} name alias(es),
+			{{ import_summary.location_aliases }} location alias(es).
+		</p>
+		{% endif %}
+	</div>
+
+	<div class="empty-state">
 		<h2>Known Names</h2>
 		<p>Names listed here are always recognized as names by the analyzer, even if it would otherwise mistake them for a place. Re-run analysis on affected entries for a change to take effect.</p>
 

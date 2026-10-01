@@ -6,7 +6,7 @@ import pdb
 import nltk
 import random
 
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, Response
 from pychartjs import Color
 from app import app, db, models, charts
 from datetime import datetime
@@ -827,3 +827,127 @@ def config_delete_location_alias(location_alias_id):
 		db.session.commit()
 		logger_config.info("Removed location alias '%s' -> '%s'", location_alias.alias, location_alias.canonical_location)
 	return redirect(url_for('config'))
+
+@app.route('/config/export')
+def config_export():
+	export = {
+		'known_names': [kn.name for kn in models.KnownName.query.order_by(models.KnownName.name).all()],
+		'known_locations': [kl.location for kl in models.KnownLocation.query.order_by(models.KnownLocation.location).all()],
+		'excluded_names': [en.name for en in models.ExcludedName.query.order_by(models.ExcludedName.name).all()],
+		'name_aliases': [
+			{'alias': a.alias, 'canonical_name': a.canonical_name}
+			for a in models.NameAlias.query.order_by(models.NameAlias.alias).all()
+		],
+		'location_aliases': [
+			{'alias': a.alias, 'canonical_location': a.canonical_location}
+			for a in models.LocationAlias.query.order_by(models.LocationAlias.alias).all()
+		],
+	}
+	logger_config.info(
+		"Exported config: %d known names, %d known locations, %d excluded names, %d name aliases, %d location aliases",
+		len(export['known_names']), len(export['known_locations']), len(export['excluded_names']),
+		len(export['name_aliases']), len(export['location_aliases']))
+
+	response = Response(json.dumps(export, indent=2), mimetype='application/json')
+	response.headers['Content-Disposition'] = 'attachment; filename=journal_config.json'
+	return response
+
+@app.route('/config/import', methods=['POST'])
+def config_import():
+	uploaded_file = request.files.get('config_file')
+	if not uploaded_file or not uploaded_file.filename:
+		logger_config.warning("Config import submitted with no file selected")
+		return render_template('analyze.html', error="Choose a config JSON file to import.")
+
+	try:
+		data = json.load(uploaded_file.stream)
+	except json.JSONDecodeError as error:
+		logger_config.error("Could not read uploaded config file %s: %s", uploaded_file.filename, error)
+		return render_template('analyze.html', error=(
+			"{} couldn't be read ({}). Check that it's valid JSON exported from this page."
+		).format(uploaded_file.filename, error))
+
+	if not isinstance(data, dict):
+		logger_config.error("Uploaded config file %s is not a JSON object", uploaded_file.filename)
+		return render_template('analyze.html', error=(
+			"{} couldn't be read. Check that it's valid JSON exported from this page."
+		).format(uploaded_file.filename))
+
+	# Only these fields are recognized - anything else in the file (e.g. from a newer
+	# export format) is silently ignored rather than rejecting the whole import.
+	import_summary = {
+		'known_names': _import_known_names(data.get('known_names', [])),
+		'known_locations': _import_known_locations(data.get('known_locations', [])),
+		'excluded_names': _import_excluded_names(data.get('excluded_names', [])),
+		'name_aliases': _import_name_aliases(data.get('name_aliases', [])),
+		'location_aliases': _import_location_aliases(data.get('location_aliases', [])),
+	}
+	db.session.commit()
+	logger_config.info("Imported config from %s: %s", uploaded_file.filename, import_summary)
+
+	known_names = models.KnownName.query.order_by(models.KnownName.name).all()
+	known_locations = models.KnownLocation.query.order_by(models.KnownLocation.location).all()
+	excluded_names = models.ExcludedName.query.order_by(models.ExcludedName.name).all()
+	name_aliases = models.NameAlias.query.order_by(models.NameAlias.alias).all()
+	location_aliases = models.LocationAlias.query.order_by(models.LocationAlias.alias).all()
+	return render_template('config.html',
+		known_names=known_names, known_locations=known_locations, excluded_names=excluded_names,
+		name_aliases=name_aliases, location_aliases=location_aliases,
+		import_summary=import_summary)
+
+def _import_known_names(items):
+	added = 0
+	for name in items:
+		if not isinstance(name, str):
+			continue
+		name = name.strip()
+		if name and not models.KnownName.query.filter(func.lower(models.KnownName.name) == name.lower()).first():
+			db.session.add(models.KnownName(name=name))
+			added += 1
+	return added
+
+def _import_known_locations(items):
+	added = 0
+	for location in items:
+		if not isinstance(location, str):
+			continue
+		location = location.strip()
+		if location and not models.KnownLocation.query.filter(func.lower(models.KnownLocation.location) == location.lower()).first():
+			db.session.add(models.KnownLocation(location=location))
+			added += 1
+	return added
+
+def _import_excluded_names(items):
+	added = 0
+	for name in items:
+		if not isinstance(name, str):
+			continue
+		name = name.strip()
+		if name and not models.ExcludedName.query.filter(func.lower(models.ExcludedName.name) == name.lower()).first():
+			db.session.add(models.ExcludedName(name=name))
+			added += 1
+	return added
+
+def _import_name_aliases(items):
+	added = 0
+	for item in items:
+		if not isinstance(item, dict):
+			continue
+		alias = str(item.get('alias', '')).strip()
+		canonical_name = str(item.get('canonical_name', '')).strip()
+		if alias and canonical_name and not models.NameAlias.query.filter(func.lower(models.NameAlias.alias) == alias.lower()).first():
+			db.session.add(models.NameAlias(alias=alias, canonical_name=canonical_name))
+			added += 1
+	return added
+
+def _import_location_aliases(items):
+	added = 0
+	for item in items:
+		if not isinstance(item, dict):
+			continue
+		alias = str(item.get('alias', '')).strip()
+		canonical_location = str(item.get('canonical_location', '')).strip()
+		if alias and canonical_location and not models.LocationAlias.query.filter(func.lower(models.LocationAlias.alias) == alias.lower()).first():
+			db.session.add(models.LocationAlias(alias=alias, canonical_location=canonical_location))
+			added += 1
+	return added
