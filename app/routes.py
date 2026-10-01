@@ -720,7 +720,8 @@ def import_scores():
 	global operation_threads
 
 	if request.method == 'GET':
-		return render_template('import_scores.html')
+		# the dedicated page is gone - its form now lives on /import
+		return redirect(url_for('import_entries'))
 
 	uploaded_file = request.files.get('scores_file')
 	if not uploaded_file or not uploaded_file.filename:

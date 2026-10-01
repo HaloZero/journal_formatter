@@ -14,6 +14,21 @@
 			<button type="submit">Import</button>
 		</form>
 	</div>
+
+	<div class="empty-state">
+		<h2>Import day scores</h2>
+		<p>Select a CSV with a date and a score per row (a header row, if present, is detected automatically). Each date is matched to an existing journal entry - dates with no matching entry are skipped.</p>
+		<form method="post" action="/import_scores" enctype="multipart/form-data">
+			<input type="file" name="scores_file" accept="text/csv,.csv" required>
+			<button type="submit">Import</button>
+		</form>
+	</div>
+
+	<div class="empty-state">
+		<h2>Scan for photos</h2>
+		<p>Scans <code>data/photos/</code> for images, matches each one to a journal entry by date, and copies matches into place. Already-imported photos are skipped, so it's safe to run again.</p>
+		<a href="/import_photos"><button type="button">Scan for Photos</button></a>
+	</div>
 </div>
 </body>
 </html>
