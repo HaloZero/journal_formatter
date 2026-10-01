@@ -34,6 +34,10 @@ MAX_COMPARISON_BUCKETS = 20
 # Selectable "top N names per bucket" options on /names_comparison
 TOP_N_OPTIONS = [10, 25]
 DEFAULT_TOP_N = 10
+
+# /names_bump always shows exactly the top 10 per period - a bump chart reads as a
+# leaderboard, and a variable-size leaderboard isn't a meaningful comparison across periods
+NAMES_BUMP_TOP_N = 10
 NAME_CHART_COLORS = [
 	Color.Red, Color.Blue, Color.Green, Color.Orange, Color.Purple,
 	Color.Teal, Color.Maroon, Color.Olive, Color.Navy, Color.Brown,
@@ -421,6 +425,72 @@ def names_comparison():
 	template_args.update(parser.template_args())
 
 	return render_template('names_comparison.html', **template_args)
+
+@app.route('/names_bump')
+def names_bump():
+	# Default to the last year, not all-time: ranking each period's top 10 independently
+	# means a long history naturally accumulates many different people who were ever
+	# top-10 in some period, which gets unreadable fast - 20 one-off entrants with only
+	# 15 chart colors to cycle through. A one-year window keeps buckets near-monthly and
+	# the cast of names small; widen the range deliberately if you want more history.
+	parser = DateRangeParser(request, RequestLengthStyle.DEFAULT_YEAR)
+	start_of_range = parser.start_of_range()
+	end_of_range = parser.end_of_range()
+
+	exclude_raw = request.args.get('exclude', '')
+	excluded_names = _load_excluded_names() | {name.strip().lower() for name in exclude_raw.split(',') if name.strip()}
+
+	buckets = _consolidate_into_buckets(start_of_range, end_of_range, MAX_COMPARISON_BUCKETS)
+	bucket_labels = [_bucket_label(bucket_start, bucket_end) for bucket_start, bucket_end in buckets]
+
+	# Each period's top 10 ranked independently (1 = most mentions that period) - unlike
+	# /names_comparison, which ranks by total across the whole range, this lets a name
+	# rise, fall, or drop out of the top 10 entirely from one period to the next.
+	bucket_ranks = []
+	for bucket_start, bucket_end in buckets:
+		entries = models.JournalEntry.query.filter(
+			and_(models.JournalEntry.entry_date >= bucket_start, models.JournalEntry.entry_date <= bucket_end))
+
+		data_points = NamesPresenter(entries).bucket_info(DateStyle.MONTH_YEAR)
+		name_totals = {
+			name: sum(counts.values())
+			for name, counts in data_points.items()
+			if name.lower() not in excluded_names
+		}
+		ranked_names = sorted(name_totals, key=lambda name: name_totals[name], reverse=True)[:NAMES_BUMP_TOP_N]
+		bucket_ranks.append({name: rank for rank, name in enumerate(ranked_names, start=1)})
+
+	# Anyone who cracked the top 10 in at least one period gets a line, even for
+	# periods where they fall out of it - that gap is the point of a bump chart.
+	names_ever_ranked = sorted({name for ranks in bucket_ranks for name in ranks})
+
+	chart = charts.NamesBumpChart()
+	chart.labels.labels = bucket_labels
+	chart.data = type('NamesBumpChartData', (), {})
+	for index, name in enumerate(names_ever_ranked):
+		color = NAME_CHART_COLORS[index % len(NAME_CHART_COLORS)]
+		series = type(name, (), {
+			'label': name,
+			'data': [ranks.get(name) for ranks in bucket_ranks],
+			'borderColor': color,
+			'backgroundColor': color,
+			'fill': False,
+			# Straight segments between ranks, not a smoothed curve - a curve
+			# overshoots past the actual integer ranks and misrepresents the data.
+			'lineTension': 0,
+		})
+		setattr(chart.data, name, series)
+	chartJSON = chart.get()
+
+	template_args = {
+		'chartJSON': chartJSON,
+		'exclude_raw': exclude_raw,
+		'bucket_labels': bucket_labels,
+	}
+
+	template_args.update(parser.template_args())
+
+	return render_template('names_bump.html', **template_args)
 
 @app.route('/places')
 def places_timeline():

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+{% include "_head.html" %}
+<body>
+
+{% include "_header_nav.html" %}
+
+<div class="content">
+    <form method="get" action="{{ url_for('names_bump') }}">
+        <div>
+            <span><h2>Top 10 Names Ranked Over Time</h2></span>
+        </div>
+
+        <p class="chart-explainer">Pick a date range - it's consolidated into up to 20 time periods automatically. Each period's top 10 most-mentioned names are ranked 1-10 independently, so a line rising, falling, or stopping shows someone's mentions gaining, fading, or dropping out of the top 10 entirely. Manage always-excluded names on <a href="{{ url_for('config') }}">Config</a>.</p>
+
+        {% include "_range_nav.html" %}
+
+        <div class="date-nav">
+            <span>Exclude:</span>
+            <input type="text" name="exclude" value="{{ exclude_raw }}" placeholder="e.g. Alex, Sarah">
+        </div>
+    </form>
+
+    {% if bucket_labels %}
+    {% include "_chart.html" %}
+    <script>
+        // pychartjs can't embed JS callbacks in the chart config it builds server-side
+        // (it strips functions before serializing), so legend hover highlighting is
+        // wired up here instead, directly against the Chart.js instance from _chart.html.
+        (function() {
+            function fade(rgba) {
+                return rgba.replace(/rgba\(([^)]+),\s*[\d.]+\)/, 'rgba($1, 0.08)');
+            }
+
+            chart.data.datasets.forEach(function(dataset) {
+                dataset._originalBorderColor = dataset.borderColor;
+            });
+
+            chart.options.legend.onHover = function(event, legendItem) {
+                var hoveredIndex = legendItem.datasetIndex;
+                chart.data.datasets.forEach(function(dataset, index) {
+                    var isHovered = index === hoveredIndex;
+                    dataset.borderColor = isHovered ? dataset._originalBorderColor : fade(dataset._originalBorderColor);
+                    dataset.borderWidth = isHovered ? 4 : 1;
+                    dataset.pointRadius = isHovered ? 5 : 0;
+                });
+                chart.update();
+            };
+
+            $('.chart-container').on('mouseleave', function() {
+                chart.data.datasets.forEach(function(dataset) {
+                    dataset.borderColor = dataset._originalBorderColor;
+                    dataset.borderWidth = 2;
+                    dataset.pointRadius = 3;
+                });
+                chart.update();
+            });
+        })();
+    </script>
+    {% else %}
+    <p class="tag-empty">No name mentions in this range.</p>
+    {% endif %}
+</div>
+</body>
+</html>
