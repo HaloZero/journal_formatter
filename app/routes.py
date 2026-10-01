@@ -29,6 +29,15 @@ logger = logging.getLogger('journal.import')
 logger_config = logging.getLogger('journal.config')
 logger_search = logging.getLogger('journal.search')
 
+# Rotates through the home page search box's placeholder - one example wasn't selling
+# what the search box can actually do, so there's a pool and a random one shows each load
+SEARCH_PLACEHOLDER_EXAMPLES = [
+	'when did I have a conversation with April about Kevin?',
+	'what was I doing in Tokyo?',
+	'when did Sam and I get in a fight?',
+	'what happened on my last birthday?',
+]
+
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
 MAX_NAME_SERIES = 15
 
@@ -84,11 +93,12 @@ def index():
 	name = request.args.get('name', '').strip()
 	place = request.args.get('place', '').strip()
 	query = request.args.get('query', '').strip()
+	search_placeholder = random.choice(SEARCH_PLACEHOLDER_EXAMPLES)
 
 	if name or place or query:
 		entries, interpreted = _search_entries(name, place, query)
 		return render_template('index.html', search_mode=True, query=query,
-			entries=entries, interpreted=interpreted)
+			search_placeholder=search_placeholder, entries=entries, interpreted=interpreted)
 
 	now = datetime.now()
 	latest_entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).limit(10).all()
@@ -101,7 +111,7 @@ def index():
 	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))
 
 	return render_template('index.html', search_mode=False, query='',
-		latest_entries=latest_entries, on_this_day_entries=on_this_day_entries,
+		search_placeholder=search_placeholder, latest_entries=latest_entries, on_this_day_entries=on_this_day_entries,
 		latest_entry_date=latest_entry_date, stale_data=stale_data)
 
 def _search_entries(name, place, query_text):

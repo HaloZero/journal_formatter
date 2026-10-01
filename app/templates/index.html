@@ -8,7 +8,7 @@
 <div class="content">
 	<form class="site-search" method="get" action="{{ url_for('index') }}">
 		<input type="text" name="query" value="{{ query }}"
-			placeholder='Ask about your journal, e.g. "when did I have a conversation with April about Kevin?"'>
+			placeholder='Ask about your journal, e.g. "{{ search_placeholder }}"'>
 		<button type="submit">Search</button>
 	</form>
 
