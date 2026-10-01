@@ -4,6 +4,6 @@
 	<script>
 		var ctx = document.getElementById("chart").getContext('2d');
 		var data = {{ chartJSON | safe }}
-		new Chart(ctx, data);
+		var chart = new Chart(ctx, data);
 	</script>
 </div>

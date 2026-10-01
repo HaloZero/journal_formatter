@@ -35,6 +35,16 @@ class NameChart(JournalBaseChart):
 		# lines (one per name), so the legend is needed to tell them apart.
 		legend = Options.Legend(display=True)
 
+class NamesBumpChart(JournalBaseChart):
+	type = ChartType.Line
+
+	class options:
+		# One line per name, so the legend distinguishes them. The y-axis is
+		# reversed and locked to 1-10 so rank 1 draws at the top, like a leaderboard.
+		legend = Options.Legend(display=True)
+		_yAxes = [Options.General(ticks=Options.General(reverse=True, min=1, max=10, stepSize=1))]
+		scales = Options.General(yAxes=_yAxes)
+
 class NameTimelineChart(JournalBaseChart):
 	type = ChartType.Bar
 
