@@ -1,6 +1,5 @@
 $(function() {
 	setupNav()
-	setupAnalyze()
 });
 
 /// setup the hamburger toggle and the Charts dropdown/accordion in the nav
@@ -26,32 +25,4 @@ function setupNav() {
 			$group.find('.nav-group-toggle').attr('aria-expanded', false)
 		}
 	})
-}
-
-/// setup the button to analyze a journal entry (used on the entry list
-/// and day-in-history pages, via _entry.html)
-function setupAnalyze() {
-	$('button.analyze_sentiment').on('click', function() {
-		var $entryElement = $(this).closest(".entry").find("pre")
-		var entryText = $entryElement.text()
-		$.getJSON(
-			'/analyze_sentiment',
-			{'entry_text': entryText, 'use_internal_classifier': 0 },
-			function (response) {
-				$.each(response, function(key, value) {
-			        if (value <= -0.1) {
-			        	entryText = entryText.replace(key, "<span class=negative_2>" + key + "</span>")
-			        } else if (value < 0) {
-			        	entryText = entryText.replace(key, "<span class=negative_1>" + key + "</span>")
-			        } else if (value == 0) {
-			        	entryText = entryText.replace(key, "<span class=neutral>" + key + "</span>")
-			        } else if (value < 0.1) {
-			        	entryText = entryText.replace(key, "<span class=positive_1>" + key + "</span>")
-			        } else {
-						entryText = entryText.replace(key, "<span class=positive_2>" + key + "</span>")
-			        }
-			    });
-			    $entryElement.html(entryText)
-			})
-	});
 }

@@ -95,8 +95,6 @@ If you want to create your own sentiment model, then you can train your own data
 
 You can test the accuracy of your model by running `Classifier.test_local_classifier()` in a flask console (run `flask shell`).
 
-If you're ready to use it, just modify `use_internal_classifier` in `main.js` to true. This is currently only used for local sentence analysis and not the graphs.
-
 ## Running tests
 
 Tests live in `tests/`, separate from the `app/` package. With `./bin/db.sh start` running, just run `pytest` — `conftest.py` points the app at a `journal_python_test` database, creates it automatically if it doesn't exist yet, creates tables, and empties them between tests, so tests never touch your real journal data. `tests/factories.py` has helpers (`make_journal_entry`, `make_journal_photo`, `make_sentiment_record`) for building fake records — see `tests/test_db_presenters.py` for examples.

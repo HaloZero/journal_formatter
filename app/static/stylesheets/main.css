@@ -307,24 +307,6 @@ b.search {
 	display: block;
 }
 
-pre .negative_2 {
-	color: red;
-	font-weight: bold;
-}
-
-pre .negative_1 {
-	color: red;
-}
-
-pre .positive_1 {
-	color: green;
-}
-
-pre .positive_2 {
-	color: green;
-	font-weight: bold;
-}
-
 /* Chart */
 
 .chart-container {

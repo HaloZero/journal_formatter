@@ -19,10 +19,6 @@
 			</span>
 		</div>
 		<div>Daily Score: {{ entry.daily_score if entry.daily_score is not none else "—" }}</div>
-		<div>
-			<span>Actions:</span>
-			<button class='analyze_sentiment'>Analyze Sentiment</button>
-		</div>
 		<div class="tags">
 			<span class="tags-label">Names:</span>
 			{% for entry_name, count in entry.unique_names() %}
