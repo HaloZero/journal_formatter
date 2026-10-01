@@ -43,39 +43,23 @@
 			</div>
 		{% endif %}
 
-		<section class="carousel-section">
+		<section class="entries-section">
 			<h2>Latest Entries</h2>
 			{% if latest_entries %}
-			<div class="carousel-wrapper">
-				<button type="button" class="carousel-arrow carousel-prev" aria-label="Previous entry">&#8249;</button>
-				<div class="carousel">
-					{% for entry in latest_entries %}
-					<div class="carousel-item">
-						{% include "_entry.html" %}
-					</div>
-					{% endfor %}
-				</div>
-				<button type="button" class="carousel-arrow carousel-next" aria-label="Next entry">&#8250;</button>
-			</div>
+				{% for entry in latest_entries %}
+					{% include "_entry.html" %}
+				{% endfor %}
 			{% else %}
 			<div class="empty-state">No entries yet.</div>
 			{% endif %}
 		</section>
 
-		<section class="carousel-section">
+		<section class="entries-section">
 			<h2>On This Day</h2>
 			{% if on_this_day_entries %}
-			<div class="carousel-wrapper">
-				<button type="button" class="carousel-arrow carousel-prev" aria-label="Previous entry">&#8249;</button>
-				<div class="carousel">
-					{% for entry in on_this_day_entries %}
-					<div class="carousel-item">
-						{% include "_entry.html" %}
-					</div>
-					{% endfor %}
-				</div>
-				<button type="button" class="carousel-arrow carousel-next" aria-label="Next entry">&#8250;</button>
-			</div>
+				{% for entry in on_this_day_entries %}
+					{% include "_entry.html" %}
+				{% endfor %}
 			{% else %}
 			<div class="empty-state">No entries on this day in previous years yet.</div>
 			{% endif %}

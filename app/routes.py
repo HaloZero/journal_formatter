@@ -92,7 +92,10 @@ def index():
 
 	now = datetime.now()
 	latest_entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).limit(10).all()
+
 	on_this_day_entries = _entries_on_this_day(now.month, now.day).all()
+	on_this_day_entries = random.sample(on_this_day_entries, min(3, len(on_this_day_entries)))
+	on_this_day_entries.sort(key=lambda entry: entry.entry_date, reverse=True)
 
 	latest_entry_date = db.session.query(func.max(models.JournalEntry.entry_date)).scalar()
 	stale_data = latest_entry_date is not None and latest_entry_date < (now.date() - relativedelta(months=1))

@@ -184,69 +184,10 @@ header h1 {
 	border-radius: 5px;
 }
 
-/* Carousels */
-.carousel-section {
+.entries-section {
 	max-width: 800px;
 	margin: 0 auto 30px;
 	text-align: left;
-}
-
-.carousel-wrapper {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.carousel {
-	flex: 1 1 auto;
-	min-width: 0;
-	display: flex;
-	overflow-x: auto;
-	overflow-y: hidden;
-	scroll-snap-type: x mandatory;
-	touch-action: pan-x;
-	-webkit-overflow-scrolling: touch;
-	scrollbar-width: none;
-}
-
-.carousel::-webkit-scrollbar {
-	display: none;
-}
-
-.carousel-item {
-	flex: 0 0 100%;
-	min-width: 0;
-	box-sizing: border-box;
-	scroll-snap-align: start;
-	scroll-snap-stop: always;
-}
-
-.carousel-item .entry {
-	margin-bottom: 0;
-}
-
-.carousel-arrow {
-	flex: 0 0 auto;
-	width: 32px;
-	height: 32px;
-	border: none;
-	border-radius: 50%;
-	background-color: #649cc7;
-	color: white;
-	font-size: 1.2em;
-	line-height: 1;
-	cursor: pointer;
-}
-
-.carousel-arrow:hover {
-	background-color: #4f82ab;
-}
-
-/* touch devices swipe the carousel directly - the arrows just add clutter */
-@media (hover: none) and (pointer: coarse) {
-	.carousel-arrow {
-		display: none;
-	}
 }
 
 /* Empty state (no journal entries yet) */
