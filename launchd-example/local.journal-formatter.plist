@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  journal_formatter — sample LaunchAgent (NOT installed by default)
+
+  This runs `make run` whenever you log in, which starts the project's
+  local Postgres cluster (if not already running) and then `flask run`
+  — see the Makefile's `db-ensure`/`run` targets, kept as the single
+  source of truth instead of reimplementing that logic here. It's a
+  LaunchAgent (runs as YOU, at login) rather than a LaunchDaemon (runs
+  as root, at boot before anyone logs in) — that's the right choice
+  here since the app lives on an external drive only your user account
+  can read, and nothing here needs root.
+
+  Note: `make run` uses `flask run --debug`, so it also auto-reloads on
+  file changes and exposes Werkzeug's interactive debugger — harmless
+  here since it's bound to 127.0.0.1 only, but swap in a plain
+  `flask run --host 127.0.0.1 --port 8571` (no `--debug`) below if you'd
+  rather this background instance not pick up unreviewed file edits.
+
+  ──────────────────────────────────────────────────────────────────────
+  BEFORE INSTALLING, edit the placeholder below:
+    YOUR_DRIVE_NAME → the Volumes mount name of your external drive,
+                       in both APP_DIR (ProgramArguments) and the
+                       StandardOutPath/StandardErrorPath log lines.
+                       Check it with: ls /Volumes
+  ──────────────────────────────────────────────────────────────────────
+  INSTALL
+    cp launchd-example/local.journal-formatter.plist \
+       ~/Library/LaunchAgents/local.journal-formatter.plist
+    launchctl bootstrap gui/$(id -u) \
+       ~/Library/LaunchAgents/local.journal-formatter.plist
+    # older macOS (pre-Big Sur) use instead:
+    #   launchctl load ~/Library/LaunchAgents/local.journal-formatter.plist
+
+  UNINSTALL — fully reversible, touches nothing in the app itself
+    launchctl bootout gui/$(id -u)/local.journal-formatter
+    rm ~/Library/LaunchAgents/local.journal-formatter.plist
+    # older macOS (pre-Big Sur) use instead of bootout:
+    #   launchctl unload ~/Library/LaunchAgents/local.journal-formatter.plist
+
+  STATUS / LOGS
+    launchctl print gui/$(id -u)/local.journal-formatter
+    tail -f /Volumes/YOUR_DRIVE_NAME/journal_formatter/data/launchd.log
+
+  RE-RUN AFTER PLUGGING THE DRIVE IN (if you logged in before it was mounted)
+    launchctl kickstart -k gui/$(id -u)/local.journal-formatter
+
+  WHY THERE'S NO <WorkingDirectory> KEY
+    If WorkingDirectory pointed at the external drive and the drive
+    wasn't mounted yet, launchd can fail to even spawn the job. Instead,
+    the script below checks whether the drive is mounted itself and
+    exits quietly (status 0, no error, no relaunch loop) if it isn't.
+-->
+<plist version="1.0">
+<dict>
+	<!-- Must be unique on your machine and match this file's name. -->
+	<key>Label</key>
+	<string>local.journal-formatter</string>
+
+	<!-- Run once at login. -->
+	<key>RunAtLoad</key>
+	<true/>
+
+	<!-- This is a "start on login" agent, not a crash-restart watchdog.
+	     Flip to <true/> if you want launchd to relaunch it whenever the
+	     flask process exits (e.g. if you kill it by hand, it'll come back). -->
+	<key>KeepAlive</key>
+	<false/>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>-lc</string>
+		<string>APP_DIR="/Volumes/YOUR_DRIVE_NAME/journal_formatter"; [ -d "$APP_DIR" ] || exit 0; cd "$APP_DIR" || exit 0; exec /usr/bin/make run</string>
+	</array>
+
+	<key>EnvironmentVariables</key>
+	<dict>
+		<!-- launchd gives bash a bare-bones PATH; add Homebrew's bin so
+		     `make run`'s internal `uv run flask ...` calls resolve `uv`. -->
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+	</dict>
+
+	<!-- No terminal is attached when launchd starts this, so send output
+	     somewhere you can read it later. Kept on the external drive
+	     itself so the log travels with the app. -->
+	<key>StandardOutPath</key>
+	<string>/Volumes/YOUR_DRIVE_NAME/journal_formatter/data/launchd.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Volumes/YOUR_DRIVE_NAME/journal_formatter/data/launchd.log</string>
+</dict>
+</plist>
