@@ -1,7 +1,10 @@
 [project]
 name = "journal-formatter"
 version = "0.1.0"
-requires-python = ">=3.11"
+# Pinned to 3.13: spacy-alignments has no prebuilt wheel on newer/older
+# interpreters here, so pip/uv fall back to a source build (via Rust) that
+# fails in this environment (Xcode/Rust toolchain license acceptance).
+requires-python = "==3.13.*"
 dependencies = [
     "alembic==1.20.0",
     "annotated-doc==0.0.5",
