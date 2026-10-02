@@ -1,19 +1,16 @@
-VENV := venv
-PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
-FLASK := $(VENV)/bin/flask
+PYTHON := uv run python
+FLASK := uv run flask
 PORT := 8571
 HOST := 127.0.0.1
 
 export FLASK_APP := app
 
-.PHONY: help venv install setup db-init db-start db-stop db-restart db-status db-create db-ensure \
+.PHONY: help install setup db-init db-start db-stop db-restart db-status db-create db-ensure \
 	migrate migration run shell test import analyze analyze-unanalyzed import-photos download-search-model clean
 
 help:
-	@echo "make setup             create venv, install deps, init/start/create the local db, run migrations"
-	@echo "make venv              create the virtualenv"
-	@echo "make install           install dependencies + spaCy model into the venv"
+	@echo "make setup             install deps, init/start/create the local db, run migrations"
+	@echo "make install           install dependencies + spaCy model via uv"
 	@echo "make db-init           initialize the project-local Postgres cluster (data/postgres)"
 	@echo "make db-start          start the local Postgres cluster"
 	@echo "make db-stop           stop the local Postgres cluster"
@@ -32,12 +29,8 @@ help:
 	@echo "make download-search-model  download the local LLM used to parse the home page search box"
 	@echo "make clean             remove Python cache files"
 
-venv:
-	python3 -m venv $(VENV)
-
-install: venv
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+install:
+	uv sync
 	$(PYTHON) -m spacy download en_core_web_trf
 
 setup: install db-init db-start db-create migrate
@@ -95,5 +88,5 @@ download-search-model:
 	$(FLASK) download-search-model
 
 clean:
-	find . -name "__pycache__" -not -path "./venv/*" -exec rm -rf {} +
-	find . -name "*.pyc" -not -path "./venv/*" -delete
+	find . -name "__pycache__" -not -path "./.venv/*" -exec rm -rf {} +
+	find . -name "*.pyc" -not -path "./.venv/*" -delete

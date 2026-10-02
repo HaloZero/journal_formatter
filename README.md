@@ -58,20 +58,14 @@ Effectively you'll need to build your own parser and just make each record confo
 
 `make help` lists shortcuts for everything below (`make setup` does steps 1–3 in one go; `make run`, `make migrate`, `make test`, etc. wrap the rest).
 
-1) Create and activate a virtualenv, then install dependencies:
-   ```
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   python -m spacy download en_core_web_trf
-   ```
+1) Install dependencies (uses [uv](https://docs.astral.sh/uv/) under the hood, creating a `.venv` automatically from `pyproject.toml`/`uv.lock`): `make install`
 2) Set up the project's own Postgres cluster (lives entirely under `data/`, separate from any system-wide Postgres):
    ```
-   ./bin/db.sh init
-   ./bin/db.sh start
-   ./bin/db.sh create
+   make db-init
+   make db-start
+   make db-create
    ```
-   `./bin/db.sh stop` shuts it down; `./bin/db.sh status` checks whether it's running. It listens on port 5433 by default (override with `PGPORT`), so it won't collide with a system Postgres on 5432. `DATABASE_URL` defaults to this cluster; set it yourself to point elsewhere instead.
+   `make db-stop` shuts it down; `make db-status` checks whether it's running. It listens on port 5433 by default (override with `PGPORT`), so it won't collide with a system Postgres on 5432. `DATABASE_URL` defaults to this cluster; set it yourself to point elsewhere instead.
 3) Run Migrations. `make migrate`
 4) Start the app server `make run`
 5) In a web browser go to `/import` and upload your export to start importing your records.
