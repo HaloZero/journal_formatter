@@ -5,3 +5,5 @@ __pycache__/
 data/
 app/static/photos/*
 !app/static/photos/.gitkeep
+
+._**
