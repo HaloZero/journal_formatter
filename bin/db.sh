@@ -5,7 +5,7 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PGDATA="$PROJECT_ROOT/data/postgres"
 PGLOG="$PROJECT_ROOT/data/postgres.log"
 PGPORT="${PGPORT:-5433}"
-PG_BIN="${PG_BIN:-/opt/homebrew/opt/postgresql@16/bin}"
+PG_BIN="${PG_BIN:-/opt/homebrew/bin/}"
 
 cmd="${1:-}"
 
