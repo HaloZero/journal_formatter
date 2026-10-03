@@ -8,6 +8,7 @@ import random
 import re
 
 from flask import render_template, flash, redirect, url_for, request, Response
+from markupsafe import Markup, escape
 from pychartjs import Color
 from app import app, db, models, charts
 from datetime import datetime
@@ -23,7 +24,7 @@ from app.importer import DailyDiaryJournalEntry, JournalImporter
 from app.photo_importer import PhotoImporter
 from app.score_importer import ScoreImporter, parse_score_csv
 from app.parsers import DateRangeParser, RequestLengthStyle
-from app import query_parser
+from app import search_query
 
 logger = logging.getLogger('journal.import')
 logger_config = logging.getLogger('journal.config')
@@ -32,9 +33,9 @@ logger_search = logging.getLogger('journal.search')
 # Rotates through the home page search box's placeholder - one example wasn't selling
 # what the search box can actually do, so there's a pool and a random one shows each load
 SEARCH_PLACEHOLDER_EXAMPLES = [
-	'what was I doing in Tokyo?',
-	'when did Sam and I get in a fight?',
-	'what happened on my last birthday?',
+	'Tokyo after:2023',
+	'name:Sam fight',
+	'birthday before:2022 -party',
 ]
 
 # Cap how many name lines get drawn on /names - past this the chart stops being readable
@@ -97,7 +98,8 @@ def index():
 	if name or place or query:
 		entries, interpreted = _search_entries(name, place, query)
 		return render_template('index.html', search_mode=True, query=query,
-			search_placeholder=search_placeholder, entries=entries, interpreted=interpreted)
+			search_placeholder=search_placeholder, entries=entries, interpreted=interpreted,
+			highlight_terms=interpreted['highlight_terms'])
 
 	now = datetime.now()
 	latest_entries = models.JournalEntry.query.order_by(models.JournalEntry.entry_date.desc()).limit(10).all()
@@ -115,8 +117,10 @@ def index():
 
 def _search_entries(name, place, query_text):
 	"""Tag-click search (exact name=/place=, from the tags on an entry card) bypasses
-	the LLM entirely - it's a precise lookup. A freeform query_text from the search box
-	goes through the hybrid LLM/heuristic parser in _hybrid_search."""
+	the query grammar entirely - it's a precise lookup. A freeform query_text from the
+	search box goes through _text_search, which understands Gmail-style tokens
+	(name:, place:, after:, before:, on:, older_than:, newer_than:) plus free-text
+	keywords matched with Postgres full-text search."""
 	if name or place:
 		filters = []
 		if name:
@@ -126,53 +130,68 @@ def _search_entries(name, place, query_text):
 		entries = models.JournalEntry.query.filter(and_(*filters)) \
 			.order_by(models.JournalEntry.entry_date.desc()).all()
 		return entries, {
-			'used_llm': False,
 			'names': [name] if name else [],
 			'places': [place] if place else [],
+			'after': None,
+			'before': None,
 			'keywords': '',
+			'highlight_terms': ([name] if name else []) + ([place] if place else []),
 		}
 
-	return _hybrid_search(query_text)
+	return _text_search(query_text)
 
-def _mentioned_values(text, known_values):
-	"""Case-insensitive, whole-word/phrase match of any known name/place against free text."""
-	lowered = text.lower()
-	return [value for value in known_values
-		if re.search(r'\b{}\b'.format(re.escape(value.lower())), lowered)]
+def _best_match(raw_value, known_values):
+	"""Case-insensitive lookup of a name:/place: token's value against the names/places
+	actually in the journal, so a typo'd or unknown token just finds nothing rather than
+	silently filtering on a value no entry has."""
+	lowered = raw_value.strip().lower()
+	for value in known_values:
+		if value.lower() == lowered:
+			return value
+	return None
 
-def _hybrid_search(query_text):
-	"""Parse a natural-language journal question into structured filters. The local LLM
-	(if downloaded - see query_parser.py) extracts candidate names/places and strips them
-	out of the topic keywords; those candidates, plus a direct heuristic pass over the raw
-	query text, are grounded against the names/places actually in the journal so we never
-	filter on something the model hallucinated. If the model isn't available, grounding
-	against the raw query text is the whole search - still useful for direct mentions like
-	"entries about Kevin"."""
+def _keyword_highlight_terms(keywords):
+	"""Pull individual words out of a free-text keyword string for highlighting - drops
+	the "OR" operator and "-excluded" terms that websearch_to_tsquery treats specially,
+	since highlighting those would be misleading."""
+	terms = []
+	for word in keywords.split():
+		word = word.strip('"')
+		if not word or word.upper() == 'OR' or word.startswith('-'):
+			continue
+		terms.append(word)
+	return terms
+
+def _text_search(query_text):
+	"""Parse a Gmail-style journal search query (see search_query.parse) into structured
+	filters and run them against Postgres: name:/place: tokens are grounded against the
+	names/places actually in the journal (so a typo or hallucinated-looking token just
+	finds nothing), after:/before:/on:/older_than:/newer_than: become entry_date bounds,
+	and any leftover free text is matched with full-text search (websearch_to_tsquery,
+	which already understands quoted phrases, "-exclude", and "OR") against entry_text."""
+	parsed = search_query.parse(query_text)
+
 	# single-character "names" (I, A, K, ...) are near-universal NER noise in the
 	# extracted names column - matching them would make almost every query AND in a
 	# garbage filter and zero out real results, so they're excluded from matching here.
 	known_names = [n for n in _distinct_array_values(models.JournalEntry.names) if len(n) > 1]
 	known_places = [p for p in _distinct_array_values(models.JournalEntry.locations) if len(p) > 1]
 
-	parsed = query_parser.parse_query(query_text)
-	used_llm = parsed is not None
+	matched_names = sorted({m for m in (_best_match(n, known_names) for n in parsed['names']) if m})
+	matched_places = sorted({m for m in (_best_match(p, known_places) for p in parsed['places']) if m})
 
-	candidate_names = set(_mentioned_values(query_text, known_names))
-	candidate_places = set(_mentioned_values(query_text, known_places))
-	keywords = query_text
+	filters = [models.JournalEntry.names.any(name) for name in matched_names]
+	filters += [models.JournalEntry.locations.any(place) for place in matched_places]
 
-	if used_llm:
-		candidate_names |= set(_mentioned_values(' '.join(parsed['names']), known_names))
-		candidate_places |= set(_mentioned_values(' '.join(parsed['places']), known_places))
-		if parsed['keywords']:
-			keywords = parsed['keywords']
+	if parsed['after']:
+		filters.append(models.JournalEntry.entry_date >= parsed['after'])
+	if parsed['before']:
+		filters.append(models.JournalEntry.entry_date <= parsed['before'])
 
-	filters = [models.JournalEntry.names.any(name) for name in candidate_names]
-	filters += [models.JournalEntry.locations.any(place) for place in candidate_places]
-
-	leftover_keywords = keywords.strip() if not (candidate_names or candidate_places) else ''
-	if leftover_keywords:
-		filters.append(models.JournalEntry.entry_text.ilike('%{}%'.format(leftover_keywords)))
+	keywords = parsed['keywords']
+	if keywords:
+		filters.append(func.to_tsvector('english', models.JournalEntry.entry_text)
+			.op('@@')(func.websearch_to_tsquery('english', keywords)))
 
 	entries = []
 	if filters:
@@ -180,20 +199,32 @@ def _hybrid_search(query_text):
 			.order_by(models.JournalEntry.entry_date.desc()).all()
 
 	logger_search.info(
-		"Search %r -> llm=%s names=%s places=%s keywords=%r (%d results)",
-		query_text, used_llm, sorted(candidate_names), sorted(candidate_places), leftover_keywords, len(entries))
+		"Search %r -> names=%s places=%s after=%s before=%s keywords=%r (%d results)",
+		query_text, matched_names, matched_places, parsed['after'], parsed['before'], keywords, len(entries))
 
 	return entries, {
-		'used_llm': used_llm,
-		'names': sorted(candidate_names),
-		'places': sorted(candidate_places),
-		'keywords': leftover_keywords,
+		'names': matched_names,
+		'places': matched_places,
+		'after': parsed['after'],
+		'before': parsed['before'],
+		'keywords': keywords,
+		'highlight_terms': matched_names + matched_places + _keyword_highlight_terms(keywords),
 	}
 
-@app.cli.command('download-search-model')
-def download_search_model_command():
-	"""Download the local LLM used to parse natural-language search queries on the home page."""
-	query_parser.download_model()
+@app.template_filter('highlight')
+def highlight_filter(text, terms):
+	"""Wrap case-insensitive whole-word/phrase matches of any of `terms` in <mark> tags
+	for search result highlighting. Escapes `text` and each term with the same function
+	before matching, so this is safe to render unescaped (Markup) even though `terms`
+	can come from free-text journal entries."""
+	escaped_text = str(escape(text))
+	escaped_terms = sorted({str(escape(term)) for term in terms if term}, key=len, reverse=True)
+	if not escaped_terms:
+		return Markup(escaped_text)
+
+	pattern = r'\b({})\b'.format('|'.join(re.escape(term) for term in escaped_terms))
+	highlighted = re.sub(pattern, r'<mark class="search-highlight">\1</mark>', escaped_text, flags=re.IGNORECASE)
+	return Markup(highlighted)
 
 @app.route('/classify_sentences')
 def classify_sentences():

@@ -6,7 +6,7 @@ HOST := 127.0.0.1
 export FLASK_APP := app
 
 .PHONY: help install setup db-init db-start db-stop db-restart db-status db-create db-ensure \
-	migrate migration run shell test import analyze analyze-unanalyzed import-photos download-search-model clean
+	migrate migration run shell test import analyze analyze-unanalyzed import-photos clean
 
 help:
 	@echo "make setup             install deps, init/start/create the local db, run migrations"
@@ -26,7 +26,6 @@ help:
 	@echo "make analyze           trigger /analyze (all entries) against a running server"
 	@echo "make analyze-unanalyzed trigger /analyze?only_unanalyzed=1 against a running server"
 	@echo "make import-photos     trigger /import_photos against a running server"
-	@echo "make download-search-model  download the local LLM used to parse the home page search box"
 	@echo "make clean             remove Python cache files"
 
 install:
@@ -83,9 +82,6 @@ analyze-unanalyzed:
 
 import-photos:
 	curl -s "http://$(HOST):$(PORT)/import_photos" > /dev/null && echo "Photo import started"
-
-download-search-model:
-	$(FLASK) download-search-model
 
 clean:
 	find . -name "__pycache__" -not -path "./.venv/*" -exec rm -rf {} +

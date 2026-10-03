@@ -1,7 +1,7 @@
 <div class="entry">
 	<h2>{{ entry.entry_date.strftime("%B %d, %Y") }}</h2>
 	<hr>
-	<pre>{{ entry.entry_text }}</pre>
+	<pre>{% if highlight_terms %}{{ entry.entry_text|highlight(highlight_terms) }}{% else %}{{ entry.entry_text }}{% endif %}</pre>
 	<hr>
 	{% if entry.photos %}
 	<div class="photos">

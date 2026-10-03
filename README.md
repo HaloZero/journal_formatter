@@ -34,9 +34,15 @@ Drop image files (`.jpg`/`.jpeg`/`.png`/`.gif`) anywhere under `data/photos/` �
 
 ### Search
 
-The home page has a single search box that takes natural-language questions, e.g. "what was I doing in Tokyo?" It works as a hybrid of a local LLM and direct lookups against the names/places already extracted from your entries: the LLM (if you've downloaded it — see `make download-search-model` below) pulls out candidate names, places, and topic keywords from the question, and those candidates are then matched against your actual journal data before being used as filters, so the model can't fabricate a filter on a name/place that doesn't exist. If the model isn't downloaded, search still works — it falls back to matching known names/places directly against the question text.
+The home page has a single search box with Gmail-style search syntax, backed by Postgres full-text search (`websearch_to_tsquery`) rather than an LLM — it's faster, has no model to download, and doesn't hallucinate a filter on a name/place that doesn't exist. Supported tokens:
 
-Clicking a name or place tag on any entry still does an exact lookup, bypassing the LLM entirely.
+- `name:Sam`, `place:Tokyo` — matched against the names/places already extracted from your entries (exact, case-insensitive)
+- `after:2023`, `before:2022-06`, `on:2023-05-01` — entry date bounds; accepts `YYYY`, `YYYY-MM`, or `YYYY-MM-DD`
+- `older_than:2y`, `newer_than:10d` — relative date bounds (`d`/`m`/`y` units), like Gmail's
+- Anything left over is free-text keyword search — quote `"an exact phrase"`, exclude a word with `-word`, or use `OR` between terms
+- Matched names, places, and keywords are highlighted in the entry text on the results page
+
+Clicking a name or place tag on any entry still does an exact lookup, bypassing the query grammar entirely.
 
 ### Entry Status
 
@@ -70,7 +76,6 @@ Effectively you'll need to build your own parser and just make each record confo
 4) Start the app server `make run`
 5) In a web browser go to `/import` and upload your export to start importing your records.
 6) Optional: In a web browser go to `/analyze` to analyze and fill in some additional information on your journal entries, or `/import_photos` to pull in photos from `data/photos/` (see below).
-7) Optional: run `make download-search-model` to download the local LLM used by the home page search box (see Search above). It's a one-time ~1GB download into `data/models/`, not part of `make install` since it's a bigger download than everyone necessarily wants up front; search still works without it, just with less flexible matching.
 
 You should be able to then see records on your localhost!
 
@@ -79,7 +84,6 @@ You should be able to then see records on your localhost!
 Everything local and personal lives under `data/` (gitignored, never committed):
 - `data/postgres/` — this project's own Postgres cluster
 - `data/photos/` — drop photos here for `/import_photos` to scan (see below)
-- `data/models/` — the local LLM used by the home page search box, if you've run `make download-search-model`
 
 ## Creating your own sentiment model
 

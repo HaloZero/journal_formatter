@@ -462,6 +462,16 @@ b.search {
 	background-color: #666666;
 }
 
+.tag-date {
+	background-color: #8a7ec8;
+}
+
+mark.search-highlight {
+	background-color: #fff2a8;
+	color: inherit;
+	border-radius: 2px;
+}
+
 /* Search page */
 .search-form {
 	max-width: 800px;
